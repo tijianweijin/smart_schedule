@@ -1,0 +1,15 @@
+# Local credentials, sessions, course fixtures and development artifacts
+.env
+.env.*
+!.env.example
+*credentials*
+*session*.json
+private/
+.local/
+__pycache__/
+*.pyc
+*.log
+.claude/settings.local.json
+docx_review/
+.DS_Store
+Thumbs.db

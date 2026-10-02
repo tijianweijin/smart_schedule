@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>刻时 · 日程表</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f9f8f6;--surface:#fff;--border:#e8e4dd;--grid-line:#ece9e2;
+  --text:#1f1e1c;--text-secondary:#8c8880;--primary:#28794b;--primary-hover:#1f623c;
+  --primary-bg:#e8f5ec;--now-line:#d94a4a;--hour-label:#8c8880;--day-header:#f7f5f2;
+  --today-bg:rgba(40,121,75,0.04);--hover-bg:rgba(0,0,0,0.02);
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06);--shadow-md:0 4px 16px rgba(0,0,0,0.10);
+  --shadow-lg:0 8px 30px rgba(0,0,0,0.12);
+  --radius-sm:6px;--radius-md:10px;--radius-lg:14px;
+  --font-body:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --transition:0.2s cubic-bezier(0.4,0,0.2,1)
+}
+html{font-size:16px}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;gap:12px}
+.topbar-left{display:flex;align-items:center;gap:10px;position:relative}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.week-nav{display:flex;align-items:center;gap:6px}
+.week-nav-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);transition:all var(--transition)}
+.week-nav-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-bg)}
+.week-nav-btn svg{width:16px;height:16px}
+.date-picker-btn{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-body);font-size:.9rem;color:var(--text);transition:all var(--transition)}
+.date-picker-btn:hover{border-color:var(--primary)}
+.date-picker-btn .week-range{font-weight:600}
+.date-picker-btn .calendar-icon{color:var(--text-secondary)}
+.date-picker-btn .calendar-icon svg{width:18px;height:18px;display:block}
+.today-btn{padding:8px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-body);font-size:.85rem;color:var(--primary);transition:all var(--transition)}
+.today-btn:hover{background:var(--primary-bg);border-color:var(--primary)}
+.daystart-group{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--text-secondary)}
+.daystart-select{padding:6px 8px;font-family:var(--font-body);font-size:.82rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);outline:none;cursor:pointer}
+.daystart-select:focus{border-color:var(--primary)}
+.add-event-btn{display:flex;align-items:center;gap:6px;padding:10px 20px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-body);font-size:.875rem;font-weight:500;transition:background var(--transition)}
+.add-event-btn:hover{background:var(--primary-hover)}
+.add-event-btn svg{width:16px;height:16px}
+
+.calendar-popup{display:none;position:absolute;top:100%;left:0;margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-lg);padding:20px;z-index:200;width:300px}
+.calendar-popup.visible{display:block}
+.calendar-month-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.calendar-month-label{font-weight:600;font-size:.95rem}
+.calendar-nav-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:.8rem}
+.calendar-nav-btn:hover{border-color:var(--primary);color:var(--primary)}
+.calendar-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:.75rem;color:var(--text-secondary);margin-bottom:8px;font-weight:500}
+.calendar-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.calendar-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:.8rem;border-radius:50%;cursor:pointer;transition:all var(--transition);color:var(--text)}
+.calendar-day:hover{background:var(--primary-bg);color:var(--primary)}
+.calendar-day.other-month{color:var(--text-secondary);opacity:.4}
+.calendar-day.today{background:var(--primary);color:#fff;font-weight:600}
+
+.schedule-wrap{flex:1;overflow-y:auto;overflow-x:auto;position:relative;height:calc(100vh - 65px)}
+.schedule-grid{display:grid;grid-template-columns:56px repeat(7,1fr);min-width:800px;position:relative}
+.grid-corner{grid-column:1;grid-row:1;background:var(--day-header);position:sticky;top:0;left:0;z-index:4;border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+.day-header-cell{background:var(--day-header);padding:10px 6px;text-align:center;border-bottom:1px solid var(--border);border-right:1px solid var(--grid-line);position:sticky;top:0;z-index:3}
+.day-header-cell .day-name{font-weight:500;color:var(--text-secondary);font-size:.72rem;text-transform:uppercase}
+.day-header-cell .day-num{font-size:1.35rem;font-weight:600;color:var(--text);line-height:1.2}
+.day-header-cell.today{background:var(--primary-bg)}
+.day-header-cell.today .day-num{color:var(--primary)}
+.day-header-cell .day-date-label{font-size:.7rem;color:var(--text-secondary);margin-top:1px}
+.hour-label-cell{grid-column:1;padding:0 8px 0 0;text-align:right;font-size:.72rem;color:var(--hour-label);border-right:1px solid var(--border);height:56px;display:flex;align-items:flex-start;justify-content:flex-end;padding-top:-1px}
+
+/* Day column overlays — single tall container per day holding grid lines + events */
+.day-col-overlay{position:relative;overflow:visible;pointer-events:none;z-index:1}
+.day-col-overlay.today-col{background:var(--today-bg)}
+.hour-grid-line{position:absolute;left:0;right:0;border-bottom:1px solid var(--grid-line);pointer-events:none}
+.day-boundary-line{position:absolute;left:0;right:0;border-top:2px dashed var(--now-line);opacity:.25;pointer-events:none;z-index:0}
+
+/* Clickable cell strips */
+.day-click-cell{cursor:pointer;position:relative;z-index:0}
+.day-click-cell:hover{background:var(--hover-bg)}
+.day-click-cell.today-col{background:var(--today-bg)}
+
+/* Event block */
+.event-block{position:absolute;left:3px;right:3px;border-radius:4px;padding:3px 6px;font-size:.7rem;color:#fff;cursor:pointer;overflow:hidden;z-index:10;box-shadow:var(--shadow-sm);pointer-events:auto}
+.event-block:hover{filter:brightness(0.9);box-shadow:var(--shadow-md);z-index:15}
+.event-block .event-title{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.event-block .event-time{font-size:.62rem;opacity:.85}
+
+/* Now line */
+.now-line{position:absolute;left:0;right:0;height:2px;background:var(--now-line);z-index:4;pointer-events:none;opacity:.7}
+.now-dot{position:absolute;left:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--now-line)}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:500;align-items:center;justify-content:center}
+.modal-overlay.visible{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:28px;width:520px;max-width:94vw;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:1.1rem;font-weight:600;margin-bottom:20px}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:.8rem;font-weight:500;color:var(--text-secondary);margin-bottom:5px}
+.form-input,.form-select{width:100%;padding:9px 12px;font-family:var(--font-body);font-size:.88rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);outline:none;transition:border-color var(--transition)}
+.form-input:focus,.form-select:focus{border-color:var(--primary)}
+.form-row{display:flex;gap:12px}
+.form-row .form-group{flex:1}
+.form-hint{font-size:.72rem;color:var(--text-secondary);margin-top:3px}
+
+/* Placeholder chips */
+.ph-chips-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:36px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:text}
+.ph-chips-wrap:focus-within{border-color:var(--primary)}
+.ph-chip{display:inline-flex;align-items:center;gap:6px;background:var(--primary-bg);border:1px solid rgba(40,121,75,0.25);border-radius:20px;padding:4px 6px 4px 12px;font-size:.8rem;font-weight:500;color:var(--primary);white-space:nowrap;user-select:none}
+.ph-chip .chip-label{max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.ph-chip .chip-edit{width:20px;height:20px;border-radius:50%;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:14px;transition:all var(--transition)}
+.ph-chip .chip-edit:hover{background:rgba(40,121,75,0.15)}
+.ph-chip .chip-del{width:20px;height:20px;border-radius:50%;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:16px;transition:all var(--transition)}
+.ph-chip .chip-del:hover{color:var(--now-line);background:rgba(217,74,74,0.1)}
+.ph-text-segment{font-size:.88rem;color:var(--text);padding:2px 0;outline:none;min-width:20px;display:inline-block}
+.ph-add-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:transparent;border:1px dashed var(--border);border-radius:20px;cursor:pointer;font-family:var(--font-body);font-size:.75rem;color:var(--text-secondary);white-space:nowrap;transition:all var(--transition)}
+.ph-add-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-bg)}
+
+/* Placeholder config popover */
+.ph-config{display:none;position:absolute;z-index:600;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-lg);padding:16px;width:280px}
+.ph-config.visible{display:block}
+.ph-config-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.ph-config-row span{font-size:.75rem;color:var(--text-secondary);white-space:nowrap}
+.ph-config-row input,.ph-config-row select{padding:4px 6px;font-size:.78rem;border:1px solid var(--border);border-radius:4px;font-family:var(--font-body)}
+.ph-config-row .num-in{width:50px;text-align:center}
+.ph-config-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.ph-config-preview{font-size:.75rem;color:var(--text-secondary);margin-top:6px}
+.ph-config-preview span{color:var(--primary);font-weight:500}
+.cph-btn{padding:5px 12px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-family:var(--font-body);font-size:.78rem;transition:all var(--transition)}
+.cph-btn-save{background:var(--primary);color:#fff}
+.cph-btn-save:hover{background:var(--primary-hover)}
+.cph-btn-cancel{background:var(--bg);border:1px solid var(--border);color:var(--text-secondary)}
+.cph-btn-cancel:hover{background:var(--border)}
+.cph-btn-delete{background:transparent;color:var(--now-line);border:1px solid rgba(217,74,74,0.3)}
+.cph-btn-delete:hover{background:rgba(217,74,74,0.05)}
+
+/* Color */
+.color-presets{display:flex;gap:8px;flex-wrap:wrap}
+.color-preset{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:all var(--transition)}
+.color-preset:hover{transform:scale(1.15)}
+.color-preset.selected{border-color:var(--text);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--text)}
+.color-custom-wrap{display:flex;align-items:center;gap:6px}
+.color-custom-input{width:28px;height:28px;border:none;border-radius:50%;cursor:pointer;padding:0;background:none}
+.color-custom-input::-webkit-color-swatch-wrapper{padding:0}
+.color-custom-input::-webkit-color-swatch{border-radius:50%;border:1px solid var(--border)}
+
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px}
+.btn-cancel{padding:10px 20px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-body);font-size:.875rem;color:var(--text-secondary)}
+.btn-cancel:hover{background:var(--border)}
+.btn-save{padding:10px 20px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-body);font-size:.875rem;font-weight:500}
+.btn-save:hover{background:var(--primary-hover)}
+.btn-delete{padding:10px 20px;background:transparent;color:var(--now-line);border:1px solid rgba(217,74,74,0.3);border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-body);font-size:.875rem;margin-right:auto}
+.btn-delete:hover{background:rgba(217,74,74,0.05);border-color:rgba(217,74,74,0.5)}
+
+/* Choice modal */
+.choice-modal{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:24px;width:360px;text-align:center}
+.choice-modal h3{font-size:1rem;font-weight:600;margin-bottom:8px}
+.choice-modal p{font-size:.85rem;color:var(--text-secondary);margin-bottom:20px}
+.choice-modal .choice-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.choice-btn{padding:10px 20px;border-radius:var(--radius-sm);border:1px solid var(--border);cursor:pointer;font-family:var(--font-body);font-size:.85rem;transition:all var(--transition);background:var(--surface);color:var(--text)}
+.choice-btn:hover{background:var(--bg);border-color:var(--primary)}
+.choice-btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.choice-btn.primary:hover{background:var(--primary-hover)}
+
+@media(max-width:768px){
+  .topbar{padding:10px 12px;flex-wrap:wrap}
+  .schedule-grid{grid-template-columns:40px repeat(7,1fr);min-width:560px}
+  .hour-label-cell{font-size:.62rem}
+  .day-header-cell .day-num{font-size:1rem}
+  .event-block{padding:2px 4px;font-size:.62rem}
+  .modal{width:98vw;padding:20px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left" style="position:relative;">
+    <button class="date-picker-btn" id="date-picker-btn">
+      <span class="calendar-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+      <span class="week-range" id="week-range-label">本周</span>
+    </button>
+    <button class="today-btn" id="today-btn">今天</button>
+    <div class="week-nav">
+      <button class="week-nav-btn" id="prev-week" title="上一周"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="week-nav-btn" id="next-week" title="下一周"><svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="calendar-popup" id="calendar-popup">
+      <div class="calendar-month-header">
+        <button class="calendar-nav-btn" id="cal-prev-month">←</button>
+        <span class="calendar-month-label" id="cal-month-label"></span>
+        <button class="calendar-nav-btn" id="cal-next-month">→</button>
+      </div>
+      <div class="calendar-weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+      <div class="calendar-days" id="calendar-days"></div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="daystart-group"><span>日起始</span><select class="daystart-select" id="daystart-select"></select></div>
+    <button class="add-event-btn" id="add-event-btn">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>添加日程
+    </button>
+  </div>
+</div>
+
+<div class="schedule-wrap" id="schedule-wrap"><div class="schedule-grid" id="schedule-grid"></div></div>
+
+<div class="modal-overlay" id="choice-overlay">
+  <div class="choice-modal">
+    <h3>修改日程</h3><p id="choice-desc"></p>
+    <div class="choice-btns">
+      <button class="choice-btn" id="choice-single">仅修改本次</button>
+      <button class="choice-btn primary" id="choice-all">修改全部相关</button>
+      <button class="choice-btn" id="choice-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">添加日程</div>
+    <div class="form-group">
+      <label class="form-label">日程名称</label>
+      <div style="font-size:.75rem;color:var(--text-secondary);margin-bottom:6px;">在名称中点击插入占位符，每个占位符生成一个日程</div>
+      <div class="ph-chips-wrap" id="chips-editor" tabindex="0"></div>
+      <div class="ph-config" id="ph-config">
+        <div class="ph-config-row"><span>范围:</span><input type="number" class="num-in" id="cfg-from" value="1" min="1" max="200"><span>至</span><input type="number" class="num-in" id="cfg-to" value="5" min="1" max="200"></div>
+        <div class="ph-config-row"><span>筛选:</span><select id="cfg-filter"><option value="all">全部</option><option value="o">仅奇数</option><option value="e">仅偶数</option></select><span>格式:</span><select id="cfg-format"><option value="">123</option><option value="o">① 带圈</option><option value="b">(1)</option><option value="cc">（一）</option><option value="c">一二三</option><option value="r">I II III</option></select></div>
+        <div class="ph-config-preview">预览: <span id="cfg-preview"></span></div>
+        <div class="ph-config-actions">
+          <button class="cph-btn cph-btn-delete" id="cfg-delete" style="display:none;">删除</button>
+          <button class="cph-btn cph-btn-cancel" id="cfg-cancel">取消</button>
+          <button class="cph-btn cph-btn-save" id="cfg-save">确定</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">日期</label><input type="date" class="form-input" id="event-date"></div>
+      <div class="form-group"><label class="form-label">开始</label><input type="time" class="form-input" id="event-start" value="09:00"></div>
+      <div class="form-group"><label class="form-label">结束</label><input type="time" class="form-input" id="event-end" value="10:00"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">类型</label><select class="form-select" id="event-type"><option value="general">一般日程</option><option value="project">项目日程</option></select></div>
+      <div class="form-group"><label class="form-label">重复</label><select class="form-select" id="event-repeat"><option value="none">不重复</option><option value="daily">每天</option><option value="weekly">每周</option><option value="monthly">每月</option></select></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">颜色</label>
+      <div class="color-presets" id="color-presets"></div>
+      <div class="color-custom-wrap" style="margin-top:8px;"><input type="color" class="color-custom-input" id="color-custom" value="#8faac7"><span style="font-size:.78rem;color:var(--text-secondary);">自定义</span></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-delete" id="btn-delete-event" style="display:none;">删除日程</button>
+      <button class="btn-cancel" id="btn-cancel">取消</button>
+      <button class="btn-save" id="btn-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var STORAGE_KEY='keshi-schedule-v4',HOUR_HEIGHT=56;
+var COLORS=['#8faac7','#8fbaa5','#c4ad8f','#b89a9a','#9aadb8','#a8b88f','#b8a4c4','#c4b08f','#8fb0b8','#b89a8f','#9aafc4','#c4a48f','#a4b89a','#b8a4b8','#8fbaa8','#adc48f','#c49aad','#8fa8c4','#b8c49a','#ad8fc4'];
+var CN=['零','一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十'];
+var CNB=['（一）','（二）','（三）','（四）','（五）','（六）','（七）','（八）','（九）','（十）','（十一）','（十二）','（十三）','（十四）','（十五）','（十六）','（十七）','（十八）','（十九）','（二十）'];
+var ROM=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX'];
+var CIR=['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳'];
+
+var events=[],cws=getMonday(new Date()),dsH=6,eedId=null,selCol=null,eedGrp=null;
+var cy,cm,chips=[],ecdIdx=-1,cev=null,cem='all';
+
+function getMonday(d){var x=new Date(d);x.setHours(0,0,0,0);var w=x.getDay(),dd=w===0?-6:1-w;x.setDate(x.getDate()+dd);return x}
+function fmtD(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function fmtWR(){var e=new Date(cws);e.setDate(e.getDate()+6);var sy=cws.getFullYear(),sm=cws.getMonth()+1,sd=cws.getDate(),ey=e.getFullYear(),em=e.getMonth()+1,ed=e.getDate();if(sy===ey&&sm===em)return sy+'年'+sm+'月'+sd+'日 - '+ed+'日';if(sy===ey)return sy+'年'+sm+'月'+sd+'日 - '+em+'月'+ed+'日';return sy+'年'+sm+'月'+sd+'日 - '+ey+'年'+em+'月'+ed+'日'}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function todayStr(){return fmtD(new Date())}
+function dRow(h){return((h-dsH+24)%24)}
+function gDispD(ds,h,m){var d=new Date(ds+'T00:00:00');if(h*60+m<dsH*60)d.setDate(d.getDate()-1);return fmtD(d)}
+function gEvDispD(ev){var h=ev.start.split(':').map(Number);return gDispD(ev.date,h[0],h[1])}
+function t2m(t){var h=t.split(':').map(Number);return h[0]*60+h[1]}
+function evTop(st){return((t2m(st)-dsH*60+1440)%1440)/60*HOUR_HEIGHT}
+function evH(st,et){var d=t2m(et)-t2m(st);if(d<=0)d=30;return Math.max(d/60*HOUR_HEIGHT,20)}
+function fmtN(n,o){var i=n-1;switch(o){case'c':return CN[n]||String(n);case'cc':return CNB[i]||('（'+n+'）');case'b':return'('+n+')';case'o':return CIR[i]||'('+n+')';case'r':return ROM[i]||String(n);default:return String(n)}}
+function expandChips(cs){var r=[''];cs.forEach(function(c){if(c.type==='text'){r=r.map(function(s){return s+c.value})}else{var ns=[];for(var n=c.from;n<=c.to;n++){if(c.filter==='o'&&n%2===0)continue;if(c.filter==='e'&&n%2!==0)continue;ns.push(n)}var nc=[];ns.forEach(function(n){r.forEach(function(s){nc.push(s+fmtN(n,c.format))})});r=nc}});return r}
+function cLabel(c){if(c.type==='text')return'"'+c.value+'"';var s=c.from+'-'+c.to;if(c.filter==='o')s+=' 奇';else if(c.filter==='e')s+=' 偶';var f={'':'#','o':'①','b':'(#)','cc':'（#）','c':'中文','r':'罗马'};return s+' '+(f[c.format]||'#').replace('#','N')}
+function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({events:events,dayStartHour:dsH}));}catch(e){}}
+function load(){try{var r=localStorage.getItem(STORAGE_KEY)||localStorage.getItem('keshi-schedule-v3');if(r){var d=JSON.parse(r);if(Array.isArray(d.events))events=d.events;if(typeof d.dayStartHour==='number')dsH=d.dayStartHour}}catch(e){}}
+function evList(ds){return events.filter(function(ev){var t=new Date(ds+'T12:00:00'),o=new Date(ev.date+'T12:00:00');if(o>t)return false;if(ev.repeat==='none')return gEvDispD(ev)===ds;if(ev.repeat==='daily'){var ed=gEvDispD(ev);if(ds<ed)return false;return gEvDispD({date:ds,start:ev.start})===ds}if(ev.repeat==='weekly')return o.getDay()===t.getDay()&&gEvDispD(ev)===ds;if(ev.repeat==='monthly')return o.getDate()===t.getDate()&&gEvDispD(ev)===ds;return false})}
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+var wl=document.getElementById('week-range-label'),sg=document.getElementById('schedule-grid');
+function render(){
+  wl.textContent=fmtWR();sg.innerHTML='';
+  var td=todayStr(),nw=new Date(),nm=nw.getHours()*60+nw.getMinutes(),nd=gDispD(td,nw.getHours(),nw.getMinutes()),dn=['周一','周二','周三','周四','周五','周六','周日'],dd=[];
+  // Position of now-line in the overlay: (totalMinutes - dayStartHour*60 + 1440) % 1440, in pixels
+  var nowPx=((nm-dsH*60+1440)%1440)/60*HOUR_HEIGHT;
+  // Corner + headers
+  var cr=document.createElement('div');cr.className='grid-corner';sg.appendChild(cr);
+  for(var d=0;d<7;d++){var dt=new Date(cws);dt.setDate(dt.getDate()+d);var ds=fmtD(dt);dd.push(ds);var hd=document.createElement('div');hd.className='day-header-cell'+(ds===td?' today':'');hd.style.gridRow='1';hd.style.gridColumn=(d+2);hd.innerHTML='<div class="day-name">'+dn[d]+'</div><div class="day-num">'+dt.getDate()+'</div><div class="day-date-label">'+(dt.getMonth()+1)+'月</div>';sg.appendChild(hd);}
+
+  // Day column overlays (one tall strip per day, rows 2-25)
+  var ovs=[];
+  for(var d2=0;d2<7;d2++){
+    var ds2=dd[d2],isTd=(ds2===nd),ov=document.createElement('div');
+    ov.className='day-col-overlay'+(isTd?' today-col':'');
+    ov.style.cssText='grid-row:2/26;grid-column:'+(d2+2)+';';
+    ov.dataset.date=ds2;
+    for(var h=0;h<24;h++){var gl=document.createElement('div');gl.className='hour-grid-line';gl.style.top=(h*HOUR_HEIGHT)+'px';ov.appendChild(gl)}
+    // Day boundary line removed per user request
+    // Now line
+    if(ds2===nd){var nl=document.createElement('div');nl.className='now-line';nl.style.top=nowPx+'px';nl.innerHTML='<div class="now-dot"></div>';ov.appendChild(nl)}
+    sg.appendChild(ov);ovs.push({el:ov,dateStr:ds2});
+  }
+
+  // Clickable cells (hour strips)
+  for(var h=0;h<24;h++){
+    var ah=(dsH+h)%24,lb=document.createElement('div');
+    lb.className='hour-label-cell';lb.style.gridRow=(h+2);lb.textContent=String(ah).padStart(2,'0')+':00';sg.appendChild(lb);
+    for(var d2=0;d2<7;d2++){
+      var ds2=dd[d2],isTd2=(ds2===nd),cl=document.createElement('div');
+      cl.className='day-click-cell'+(isTd2?' today-col':'');
+      cl.style.cssText='grid-row:'+(h+2)+';grid-column:'+(d2+2)+';';
+      cl.dataset.date=ds2;cl.dataset.hour=String(ah).padStart(2,'0');
+      cl.addEventListener('click',function(e){var c=e.target;if(e.target.closest('.event-block'))return;
+        var rect=c.getBoundingClientRect(),cy=e.clientY-rect.top,hf=cy/HOUR_HEIGHT,ch=parseInt(c.dataset.hour,10),aah=ch+Math.floor(hf),aam=Math.round((hf%1)*60/15)*15;
+        openNewModal();eventDateInput.value=c.dataset.date;eventStartInput.value=String(Math.max(0,Math.min(23,aah))).padStart(2,'0')+':'+String(Math.min(59,aam)).padStart(2,'0');eventEndInput.value=String(Math.min(aah+1,23)).padStart(2,'0')+':00'});
+      sg.appendChild(cl);
+    }
+  }
+
+  // Events on overlays
+  dd.forEach(function(ds){evList(ds).forEach(function(ev){var top=evTop(ev.start),h2=evH(ev.start,ev.end);
+    ovs.forEach(function(o){if(o.dateStr===ds){var bk=document.createElement('div');bk.className='event-block';bk.style.top=top+'px';bk.style.height=h2+'px';bk.style.background=ev.color||'#8faac7';bk.innerHTML='<div class="event-title">'+esc(ev.name)+'</div><div class="event-time">'+ev.start+'-'+ev.end+'</div>';bk.addEventListener('click',function(e2){e2.stopPropagation();openEditChoice(ev)});o.el.appendChild(bk)}})})});
+}
+
+// Calendar
+var cp=document.getElementById('calendar-popup'),cde=document.getElementById('calendar-days'),cml=document.getElementById('cal-month-label');
+function rCal(){cml.textContent=cy+'年'+(cm+1)+'月';cde.innerHTML='';var fd=new Date(cy,cm,1),ld=new Date(cy,cm+1,0),sd=fd.getDay()||7,dim=ld.getDate(),pdm=new Date(cy,cm,0).getDate(),ttd=todayStr();for(var i=sd-1;i>0;i--){var dv=document.createElement('div');dv.className='calendar-day other-month';dv.textContent=pdm-i+1;cde.appendChild(dv)}for(var j=1;j<=dim;j++){var ds=fmtD(new Date(cy,cm,j)),dv2=document.createElement('div');dv2.className='calendar-day'+(ds===ttd?' today':'');dv2.textContent=j;dv2.addEventListener('click',function(){cws=getMonday(new Date(cy,cm,j));render();hCal()});cde.appendChild(dv2)}var rem=7-((sd-1+dim)%7);if(rem<7){for(var k=1;k<=rem;k++){var dv3=document.createElement('div');dv3.className='calendar-day other-month';dv3.textContent=k;cde.appendChild(dv3)}}}
+function sCal(){cy=cws.getFullYear();cm=cws.getMonth();rCal();cp.classList.add('visible')}
+function hCal(){cp.classList.remove('visible')}
+
+// Color presets
+function bCP(){var w=document.getElementById('color-presets');w.innerHTML='';COLORS.forEach(function(c){var bn=document.createElement('button');bn.type='button';bn.className='color-preset';bn.style.background=c;bn.dataset.color=c;bn.addEventListener('click',function(){w.querySelectorAll('.color-preset').forEach(function(x){x.classList.remove('selected')});bn.classList.add('selected');selCol=c;document.getElementById('color-custom').value=c});w.appendChild(bn)})}
+function bDS(){var s=document.getElementById('daystart-select');s.innerHTML='';for(var h=0;h<24;h++){var o=document.createElement('option');o.value=h;o.textContent=String(h).padStart(2,'0')+':00';s.appendChild(o)}s.value=dsH}
+function rndC(){return COLORS[Math.floor(Math.random()*COLORS.length)]}
+function selPC(c){var w=document.getElementById('color-presets');w.querySelectorAll('.color-preset').forEach(function(b){b.classList.toggle('selected',b.dataset.color===c)});document.getElementById('color-custom').value=c;selCol=c}
+
+// Chip editor
+var ce=document.getElementById('chips-editor'),phCfg=document.getElementById('ph-config');
+function renderChips(){ce.innerHTML='';chips.forEach(function(c,i){if(c.type==='text'){var sp=document.createElement('span');sp.className='ph-text-segment';sp.textContent=c.value;sp.contentEditable='true';sp.addEventListener('input',function(){c.value=sp.textContent});sp.addEventListener('keydown',function(e){if(e.key==='Backspace'&&sp.textContent===''&&chips.length>1){e.preventDefault();chips.splice(i,1);renderChips()}});ce.appendChild(sp)}else{var ch=document.createElement('span');ch.className='ph-chip';ch.innerHTML='<span class="chip-label">'+esc(cLabel(c))+'</span>';var eb=document.createElement('button');eb.className='chip-edit';eb.innerHTML='&#9998;';eb.title='编辑';eb.addEventListener('click',function(e){e.stopPropagation();oCfg(i,ch)});var db=document.createElement('button');db.className='chip-del';db.innerHTML='&times;';db.title='删除';db.addEventListener('click',function(e){e.stopPropagation();chips.splice(i,1);renderChips();hCfg()});ch.appendChild(eb);ch.appendChild(db);ch.addEventListener('click',function(e){if(e.target===ch)oCfg(i,ch)});ce.appendChild(ch)}});if(chips.length===0)chips.push({type:'text',value:''});var ab=document.createElement('button');ab.className='ph-add-btn';ab.textContent='+ 占位符';ab.addEventListener('click',function(e){e.stopPropagation();sNewCfg()});ce.appendChild(ab)}
+function oCfg(i,el){ecdIdx=i;var c=chips[i];document.getElementById('cfg-from').value=c.from||1;document.getElementById('cfg-to').value=c.to||5;document.getElementById('cfg-filter').value=c.filter||'all';document.getElementById('cfg-format').value=c.format||'';document.getElementById('cfg-delete').style.display='';uCP();posCfg(el);phCfg.classList.add('visible')}
+function sNewCfg(){ecdIdx=-1;document.getElementById('cfg-from').value=1;document.getElementById('cfg-to').value=5;document.getElementById('cfg-filter').value='all';document.getElementById('cfg-format').value='';document.getElementById('cfg-delete').style.display='none';uCP();var ab=ce.querySelector('.ph-add-btn');posCfg(ab);phCfg.classList.add('visible')}
+function posCfg(el){var r=el.getBoundingClientRect();phCfg.style.left=Math.min(r.left,window.innerWidth-300)+'px';phCfg.style.top=(r.bottom+6)+'px'}
+function uCP(){var f=parseInt(document.getElementById('cfg-from').value,10),t=parseInt(document.getElementById('cfg-to').value,10),fl=document.getElementById('cfg-filter').value,ft=document.getElementById('cfg-format').value,ns=[];for(var n=f;n<=t;n++){if(fl==='o'&&n%2===0)continue;if(fl==='e'&&n%2!==0)continue;ns.push(n)}var pv=ns.slice(0,5).map(function(n){return fmtN(n,ft)}).join(', ');document.getElementById('cfg-preview').textContent=pv+(ns.length>5?' … 共'+ns.length+'项':'')}
+function sCfg(){var c={type:'ph',from:parseInt(document.getElementById('cfg-from').value,10),to:parseInt(document.getElementById('cfg-to').value,10),filter:document.getElementById('cfg-filter').value,format:document.getElementById('cfg-format').value};if(ecdIdx>=0)chips[ecdIdx]=c;else chips.push(c);hCfg();renderChips()}
+function dCfg(){if(ecdIdx>=0){chips.splice(ecdIdx,1);renderChips()}hCfg()}
+function hCfg(){phCfg.classList.remove('visible');ecdIdx=-1}
+
+function openEditChoice(ev){cev=ev;if(!ev.repeat||ev.repeat==='none'){if(!ev.groupId){openEditModalDirect(ev);return}}if(ev.repeat&&ev.repeat!=='none'||ev.groupId){var desc='';if(ev.groupId)desc='此日程是通过占位符批量生成的。';else desc='此日程是循环日程。';document.getElementById('choice-desc').textContent=desc+'你希望如何修改？';document.getElementById('choice-overlay').classList.add('visible');return}openEditModalDirect(ev)}
+document.getElementById('choice-single').addEventListener('click',function(){document.getElementById('choice-overlay').classList.remove('visible');openEditModalDirect(cev,true)});
+document.getElementById('choice-all').addEventListener('click',function(){document.getElementById('choice-overlay').classList.remove('visible');openEditModalDirect(cev,false)});
+document.getElementById('choice-cancel').addEventListener('click',function(){document.getElementById('choice-overlay').classList.remove('visible')});
+document.getElementById('choice-overlay').addEventListener('click',function(e){if(e.target===document.getElementById('choice-overlay'))document.getElementById('choice-overlay').classList.remove('visible')});
+
+var mo=document.getElementById('modal-overlay'),mt=document.getElementById('modal-title'),eventDateInput=document.getElementById('event-date'),eventStartInput=document.getElementById('event-start'),eventEndInput=document.getElementById('event-end'),eventTypeInput=document.getElementById('event-type'),eventRepeatInput=document.getElementById('event-repeat'),colorCustomInput=document.getElementById('color-custom'),btnDeleteEvent=document.getElementById('btn-delete-event');
+
+function openNewModal(){eedId=null;eedGrp=null;cev=null;cem='all';mt.textContent='添加日程';chips=[{type:'text',value:''}];renderChips();eventDateInput.value=todayStr();eventStartInput.value='09:00';eventEndInput.value='10:00';eventTypeInput.value='general';eventRepeatInput.value='none';selCol=rndC();selPC(selCol);btnDeleteEvent.style.display='none';hCfg();mo.classList.add('visible')}
+
+function openEditModalDirect(ev,so){cev=ev;eedId=ev.id;eedGrp=ev.groupId||null;cem=so?'single':'all';mt.textContent=so?'编辑日程（本次）':'编辑日程（全部）';chips=[{type:'text',value:ev.name}];renderChips();eventDateInput.value=ev.date;eventStartInput.value=ev.start;eventEndInput.value=ev.end;eventTypeInput.value=ev.type;eventRepeatInput.value=ev.repeat||'none';selCol=ev.color||rndC();selPC(selCol);btnDeleteEvent.style.display='';hCfg();mo.classList.add('visible')}
+
+function closeModal(){mo.classList.remove('visible');eedId=null;eedGrp=null;cev=null;hCfg()}
+
+function saveEvent(){var names=expandChips(chips);if(names.length===0){alert('请输入日程名称');return}var color=selCol||colorCustomInput.value||rndC();if(names.length>150){alert('生成的日程过多（最多150个），请缩小范围');return}var bd=eventDateInput.value,bs=eventStartInput.value,be=eventEndInput.value,bt=eventTypeInput.value,br=eventRepeatInput.value;
+  if(eedId){if(eedGrp||(cev&&cev.repeat&&cev.repeat!=='none')){if(cem==='single'){var idx=events.findIndex(function(e){return e.id===eedId});if(idx>=0){events[idx].name=names[0];events[idx].date=bd;events[idx].start=bs;events[idx].end=be;events[idx].type=bt;events[idx].repeat=br;events[idx].color=color;events[idx].groupId=null}}else{if(eedGrp){events.forEach(function(e){if(e.groupId===eedGrp){e.name=names[0];e.start=bs;e.end=be;e.type=bt;e.repeat=br;e.color=color}})}else{var idx2=events.findIndex(function(e){return e.id===eedId});if(idx2>=0){events[idx2].name=names[0];events[idx2].date=bd;events[idx2].start=bs;events[idx2].end=be;events[idx2].type=bt;events[idx2].repeat=br;events[idx2].color=color}}}}else{var idx3=events.findIndex(function(e){return e.id===eedId});if(idx3>=0){events[idx3].name=names[0];events[idx3].date=bd;events[idx3].start=bs;events[idx3].end=be;events[idx3].type=bt;events[idx3].repeat=br;events[idx3].color=color}}}else{var gid=names.length>1?uid():null;names.forEach(function(name,ni){var doff=0;if(br==='none'&&names.length>1)doff=ni;var d=new Date(bd+'T00:00:00');d.setDate(d.getDate()+doff);events.push({id:uid(),name:name,date:fmtD(d),start:bs,end:be,type:bt,repeat:br,color:color,groupId:gid})})}save();render();closeModal()}
+
+function deleteEvent(){if(!cev)return;if(!confirm('确定删除吗？'))return;if(cem==='single'){events=events.filter(function(e){return e.id!==eedId})}else{var gid=eedGrp;if(gid)events=events.filter(function(e){return e.groupId!==gid});else events=events.filter(function(e){return e.id!==eedId})}save();render();closeModal()}
+
+colorCustomInput.addEventListener('input',function(){selCol=colorCustomInput.value;document.getElementById('color-presets').querySelectorAll('.color-preset').forEach(function(b){b.classList.remove('selected')})});
+
+// Config buttons
+document.getElementById('cfg-save').addEventListener('click',sCfg);
+document.getElementById('cfg-cancel').addEventListener('click',hCfg);
+document.getElementById('cfg-delete').addEventListener('click',dCfg);
+document.getElementById('cfg-from').addEventListener('input',uCP);
+document.getElementById('cfg-to').addEventListener('input',uCP);
+document.getElementById('cfg-filter').addEventListener('change',uCP);
+document.getElementById('cfg-format').addEventListener('change',uCP);
+
+// Global listeners
+document.getElementById('date-picker-btn').addEventListener('click',function(e){e.stopPropagation();cp.classList.contains('visible')?hCal():sCal()});
+document.getElementById('cal-prev-month').addEventListener('click',function(e){e.stopPropagation();if(cm===0){cy--;cm=11}else cm--;rCal()});
+document.getElementById('cal-next-month').addEventListener('click',function(e){e.stopPropagation();if(cm===11){cy++;cm=0}else cm++;rCal()});
+document.addEventListener('click',function(e){if(!cp.contains(e.target)&&e.target!==document.getElementById('date-picker-btn'))hCal()});
+document.getElementById('prev-week').addEventListener('click',function(){cws.setDate(cws.getDate()-7);render()});
+document.getElementById('next-week').addEventListener('click',function(){cws.setDate(cws.getDate()+7);render()});
+document.getElementById('today-btn').addEventListener('click',function(){cws=getMonday(new Date());render()});
+document.getElementById('daystart-select').addEventListener('change',function(){dsH=parseInt(this.value);save();render()});
+document.getElementById('add-event-btn').addEventListener('click',openNewModal);
+document.getElementById('btn-cancel').addEventListener('click',closeModal);
+document.getElementById('btn-save').addEventListener('click',saveEvent);
+document.getElementById('btn-delete-event').addEventListener('click',deleteEvent);
+mo.addEventListener('click',function(e){if(e.target===mo){hCfg();closeModal()}});
+
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeModal();hCal();document.getElementById('choice-overlay').classList.remove('visible')}});
+
+// Init
+load();bDS();bCP();render();renderChips();
+setInterval(render,60000);
+})();
+</script>
+</body>
+</html>
