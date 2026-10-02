@@ -6,6 +6,7 @@
 *session*.json
 private/
 .local/
+ketime-backup-*.json
 __pycache__/
 *.pyc
 *.log
