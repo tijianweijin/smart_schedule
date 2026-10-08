@@ -120,6 +120,8 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(self.request("/api/config", headers={"Origin": "https://evil.invalid"})[0], 403)
         self.assertEqual(self.request("/api/config", headers={"Sec-Fetch-Site": "cross-site"})[0], 403)
         self.assertEqual(self.request("/api/bupt/timetable", {"account": "test", "password": "secret"})[0], 403)
+        self.assertEqual(self.request("/api/settings/read", {})[0], 403)
+        self.assertEqual(self.request("/api/settings/save", {"clear": True})[0], 403)
 
     @patch("ketime_server.fetch_timetable")
     def test_success_and_rate_limit(self, fetch):
@@ -138,6 +140,30 @@ class ServerTests(unittest.TestCase):
         code, _, body = self.request("/api/bupt/timetable", {"account": "test", "password": "secret"}, headers)
         self.assertEqual(code, 502)
         self.assertNotIn(b"test-secret", body)
+
+    @patch("ketime_server.public_settings", return_value={"account": "test_account", "hasPassword": True, "hasCloudPassword": True})
+    def test_read_settings_no_password_response(self, read):
+        headers = {"Content-Type": "application/json", "X-Ketime-Token": server.BOOT_TOKEN}
+        code, _, body = self.request("/api/settings/read", {}, headers)
+        self.assertEqual(code, 200)
+        self.assertNotIn("password", json.loads(body))
+
+    @patch("ketime_server.stored_credentials", return_value=("test_account", "stored_secret", "2026-08-31"))
+    @patch("ketime_server.fetch_timetable", return_value={"provider": "bupt", "events": []})
+    def test_timetable_uses_stored_credentials(self, fetch, stored):
+        server.LAST_REQUEST = 0
+        headers = {"Content-Type": "application/json", "X-Ketime-Token": server.BOOT_TOKEN}
+        self.assertEqual(self.request("/api/bupt/timetable", {"stored": True}, headers)[0], 200)
+        fetch.assert_called_once_with("test_account", "stored_secret", "2026-08-31")
+
+    @patch("ketime_server.stored_credentials", return_value=("test_account", "stored_cloud_secret", ""))
+    @patch("ketime_server.fetch_homework", return_value={"provider": "bupt-ucloud", "assignments": []})
+    def test_homework_uses_cloud_password(self, fetch, stored):
+        server.LAST_CLOUD_REQUESTS.clear()
+        headers = {"Content-Type": "application/json", "X-Ketime-Token": server.BOOT_TOKEN}
+        self.assertEqual(self.request("/api/ucloud/homework", {"stored": True, "loginId": "fixture"}, headers)[0], 200)
+        stored.assert_called_once_with(cloud=True)
+        fetch.assert_called_once_with("fixture", "test_account", "stored_cloud_secret", "")
 
 
 if __name__ == "__main__":

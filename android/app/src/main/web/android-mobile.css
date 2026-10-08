@@ -1,0 +1,147 @@
+html,body{height:100%;height:100dvh;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+input,select,textarea{font-size:16px!important}button{touch-action:manipulation}
+.schedule-wrap,.timeline,.growth-chart-scroll,.untimed-scroll{-webkit-overflow-scrolling:touch}
+@media(pointer:coarse){
+ .node-delete,.task-delete,.untimed-delete{opacity:1!important}
+ .task-toggle,.untimed-toggle{min-width:26px;min-height:26px}
+ .node-circle{-webkit-user-select:none;user-select:none;touch-action:pan-x pan-y}
+ .context-menu-item{min-height:44px}.icon-btn{min-width:40px;min-height:40px}
+ .btn{min-height:40px}.task-edit,.task-delete,.untimed-delete{min-height:30px}
+ .task-row{grid-template-columns:28px minmax(0,1fr) 28px}.untimed-item{grid-template-columns:28px minmax(0,1fr) auto 28px}
+}
+@media(max-width:600px){
+ .schedule-toolbar{padding:10px;gap:8px;flex-wrap:wrap}
+ .overlay .modal{max-height:88dvh;overflow:auto}
+ .calendar-popup{left:10px;max-width:calc(100vw - 20px)}
+ .growth-range{flex-wrap:wrap}
+}
+
+/* Android-only layout; the desktop navigation and calendar remain unchanged. */
+:root{--nav-height:0px;--android-bottom-height:34px;--android-time-width:42px;--android-day-width:117px}
+body{padding-bottom:calc(var(--android-bottom-height) + env(safe-area-inset-bottom,0px))}
+.app-nav{height:var(--nav-height);grid-template-columns:1fr auto;padding:0 14px}
+.android-bottom-nav{position:fixed;bottom:0;left:0;right:0;width:100%;justify-self:stretch;z-index:200;display:grid;grid-template-columns:minmax(0,1fr) 48px minmax(0,1fr);gap:0;height:calc(var(--android-bottom-height) + env(safe-area-inset-bottom,0px));padding:0 0 env(safe-area-inset-bottom,0px);background:var(--surface);border:0;border-top:1px solid var(--border);border-radius:0;box-shadow:0 -2px 10px rgba(44,40,34,.04)}
+.android-bottom-nav .view-tab{height:100%;width:100%;min-width:0;padding:0 4px;border-radius:0;font-size:.88rem;background:transparent;box-shadow:none;border-top:3px solid transparent}
+.android-bottom-nav .view-tab.active{background:var(--primary-soft);border-top-color:var(--primary);color:var(--primary)}
+.android-nav-left,.android-nav-right{height:100%;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.android-nav-left .view-tab,.android-nav-right .view-tab,.android-nav-left #settings-btn{font-size:12px;line-height:1.4;white-space:nowrap;padding:0 2px}
+.android-nav-left #settings-btn{position:static;justify-self:stretch;align-self:stretch;width:100%;height:100%;min-width:0;background:transparent;border:0;border-top:3px solid transparent;border-radius:0;color:var(--text-2);font-weight:600}
+.android-nav-left #settings-btn:hover{color:var(--primary);background:var(--primary-soft)}
+.android-nav-left #settings-btn.active{color:var(--primary);background:var(--primary-soft);border-top-color:var(--primary)}
+.android-bottom-nav .android-add-event{align-self:stretch;justify-self:stretch;display:flex;align-items:center;justify-content:center;gap:0;width:100%;height:100%;min-height:0;padding:0;background:var(--primary);border:0;border-radius:0;box-shadow:none}
+.android-add-event>span:first-child{font-size:24px;line-height:1}
+.android-bottom-nav .android-add-event .label{display:none}
+.schedule-toolbar #today-btn,.schedule-toolbar .week-nav,.schedule-toolbar #holiday-btn,.schedule-toolbar #week-range-label{display:none!important}
+#view-schedule .schedule-toolbar{height:58px;min-height:58px;flex-basis:58px;flex-wrap:nowrap;gap:4px;padding:7px 8px}
+.schedule-toolbar #sync-status{position:absolute;top:100%;left:10px;right:10px;flex:none;z-index:130;background:var(--surface);font-size:11px;white-space:normal;overflow-wrap:anywhere;padding:4px 6px;border-radius:0 0 5px 5px;box-shadow:var(--shadow-soft)}
+.schedule-toolbar #sync-status:empty{display:none}
+.schedule-toolbar .date-picker-btn{flex:0 0 auto;width:auto;min-width:0;height:42px;padding:0 4px;gap:4px;border:0;border-radius:0;box-shadow:none;background:transparent}
+.calendar-icon{display:flex;align-items:center;justify-content:center;color:var(--primary)}
+.calendar-icon svg{width:18px;height:18px}
+.android-calendar-month{font-size:12px;white-space:nowrap;font-weight:600}
+.schedule-toolbar .toolbar-spacer{min-width:0}
+.schedule-toolbar .daystart-group{gap:3px;white-space:nowrap}
+.daystart-group .android-daystart-label{display:inline!important;font-size:11px;font-weight:400;color:var(--muted)}
+.schedule-toolbar .daystart-select{width:65px;max-width:65px;padding:7px 2px}
+.schedule-toolbar #bupt-sync-btn,.schedule-toolbar #schedule-assistant-btn{padding:8px 4px;white-space:nowrap;font-size:11px}
+@media(max-width:380px){
+ #view-schedule .schedule-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:40px 40px;height:96px;min-height:96px;flex-basis:96px;padding:5px 8px;gap:4px 6px}
+ .schedule-toolbar .date-picker-btn{grid-column:1;grid-row:1;justify-self:start;height:40px}
+ .schedule-toolbar .daystart-group{grid-column:2;grid-row:1;justify-self:end}
+ .schedule-toolbar .toolbar-spacer{display:none}
+ .schedule-toolbar #bupt-sync-btn{grid-column:1;grid-row:2;justify-self:end}
+ .schedule-toolbar #schedule-assistant-btn{grid-column:2;grid-row:2;justify-self:end}
+}
+.schedule-grid{grid-template-rows:48px var(--reminder-height,76px) repeat(24,var(--hour))}
+.schedule-grid .day-reminder-cell,.schedule-grid .reminder-corner{top:48px}
+.day-header-cell{flex-direction:row;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
+.day-header-cell .day-date-label,.day-header-cell .day-name{font-size:11px;line-height:1;color:var(--text-2)}
+.day-header-cell .day-num{font-size:1.12rem;font-weight:700;line-height:1}
+#view-schedule.active{height:calc(100dvh - var(--nav-height) - var(--android-bottom-height) - env(safe-area-inset-bottom,0px))}
+#view-settings.active{height:calc(100dvh - var(--android-bottom-height) - env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.settings-page{max-width:740px;margin:0 auto;padding:18px 14px 24px}
+#view-settings .modal{position:static;width:100%;max-width:none;max-height:none;overflow:visible;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;animation:none;transform:none}
+#view-settings .modal-title{font-family:var(--serif);font-size:1.4rem;margin-bottom:16px}
+#view-settings .modal>.modal-actions{display:none}
+#view-settings .form-row{gap:10px}
+#view-settings #settings-form .btn{margin-bottom:6px}
+#view-settings .bupt-note{overflow-wrap:anywhere}
+.untimed-head #add-untimed-todo{width:34px;min-width:34px;height:34px;padding:0;font-size:23px;line-height:1;font-weight:400}
+.schedule-grid{grid-template-columns:var(--android-time-width) repeat(9,var(--android-day-width));width:calc(var(--android-time-width) + 9 * var(--android-day-width));min-width:0}
+.schedule-wrap{scroll-padding-left:var(--android-time-width)}
+.untimed-scroll{padding:8px 10px 12px}
+.untimed-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.untimed-list .untimed-item{height:auto;min-height:64px;grid-template-columns:26px minmax(0,1fr) 24px;align-items:start;gap:2px 4px;padding:5px 2px;background:var(--surface);border:1px solid var(--border);border-radius:7px}
+.untimed-item .untimed-toggle{grid-column:1;grid-row:1;margin-top:3px}
+.untimed-item .untimed-name,.untimed-item .untimed-edit-input{grid-column:2;grid-row:1;white-space:normal;overflow-wrap:anywhere;text-overflow:clip;font-size:.76rem;line-height:1.5;padding:2px 0}
+.untimed-item .untimed-delete{grid-column:3;grid-row:1;width:24px;opacity:1}
+.untimed-item .inbox-organize{grid-column:2 / 4;grid-row:2;justify-self:start;min-height:28px;padding:2px 0}
+.untimed-item .homework-due{white-space:normal;font-size:11px;line-height:1.5}
+.event-block,.event-block.has-conflict{padding:4px 4px 26px 5px}
+.event-block .event-title{white-space:normal;overflow-wrap:anywhere;text-overflow:clip;line-height:1.3}
+.event-block .event-time,.event-block .event-link,.event-block .event-source{white-space:normal;overflow-wrap:anywhere;text-overflow:clip;line-height:1.3}
+.event-block .event-check,.event-block.has-conflict .event-check{top:auto;bottom:3px;right:4px;width:20px;height:20px;transform:none}
+.event-block .event-check:hover,.event-block.has-conflict .event-check:hover{transform:scale(1.08)}
+.event-block.event-marker{padding:4px 25px 0 4px}
+.event-block.event-marker.marker-end-only{padding:0 25px 4px 4px}
+.event-block.event-marker .event-check{top:auto;bottom:3px;right:3px;width:14px;height:14px;font-size:10px;transform:none}
+.event-block.event-marker.marker-start-only{padding:4px 3px 0}
+.event-block.event-marker.marker-start-only .event-check{position:relative;top:auto;bottom:auto;right:auto;align-self:flex-end;flex:0 0 14px;margin-top:3px}
+
+/* Only the calendar popup marks the date under the viewport's center line. */
+.calendar-day.today:not(.android-calendar-selected),.calendar-day.today:not(.android-calendar-selected):hover{background:var(--primary-soft);color:var(--primary)}
+.calendar-day.android-calendar-selected,.calendar-day.android-calendar-selected:hover{background:var(--primary);color:#fff}
+
+/* Compact project timelines: three node slots per phone viewport. */
+.project-app,.growth-app{padding:18px 12px 24px}
+.project-header-main,.growth-header-main{gap:10px;padding-bottom:14px;margin-bottom:10px}
+.project-title,.growth-title{font-size:1.4rem;line-height:1.25}
+.project-header-main .btn{padding:7px 10px;font-size:.8rem}
+.project-rule-note{font-size:12px;line-height:1.6;margin-bottom:14px;color:var(--text-2)}
+.projects-list{gap:14px}
+.project-card{padding:12px 10px;border-radius:10px;box-shadow:none}
+.project-card-head{display:grid;grid-template-columns:18px minmax(0,1fr) 86px 24px;gap:7px;margin-bottom:16px;align-items:center}
+.project-color{grid-column:1;grid-row:1;width:16px;height:16px}
+.project-name{grid-column:2 / 4;grid-row:1;min-width:0;width:100%;font-size:16px}
+.delete-project{grid-column:4;grid-row:1;padding:3px;min-height:28px}
+.project-badge{grid-column:1 / 3;grid-row:2;justify-self:start;font-size:11px;padding:3px 7px}
+.completion{grid-column:3 / 5;grid-row:2;justify-self:end;font-size:12px;gap:5px}
+.completion-bar{width:48px;height:4px}
+.timeline{padding:4px 0 8px;scrollbar-width:thin;scrollbar-color:var(--track) transparent}
+.timeline-row{position:relative;padding-inline:var(--android-node-width,105px)}
+.node-group{width:var(--android-node-width,105px);flex:0 0 var(--android-node-width,105px)}
+.node-hitarea{gap:6px}
+.node-circle{width:40px;height:40px;border-width:2px}
+.connector{top:19px;height:2px}
+.node-label{width:calc(100% - 10px);font-size:12px!important;padding:4px 1px;min-height:30px}
+.node-delete{right:calc(50% - 32px);top:-3px;width:20px;height:20px}
+.android-current-node .node-circle:not(.failed){border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
+.node-extras{width:calc(100% - 8px);margin-top:7px;padding-left:6px;border-left-width:1px}
+.checklist-header{font-size:11px;gap:3px;line-height:1.4;overflow-wrap:anywhere}
+.node-extras .task-row{grid-template-columns:22px minmax(0,1fr) 22px;gap:2px 3px;align-items:start}
+.task-row .task-toggle{grid-column:1;grid-row:1;min-width:20px;min-height:20px;width:20px;height:20px;margin-top:2px}
+.task-main{grid-column:2 / 4;grid-row:1}
+.task-name{font-size:12px!important;line-height:1.5;min-height:24px}
+.task-meta{font-size:11px;white-space:normal;overflow-wrap:anywhere;line-height:1.4}
+.task-edit{grid-column:2;grid-row:2;justify-self:start}
+.task-delete{grid-column:3;grid-row:2}
+.add-task{font-size:11px;text-align:left;line-height:1.5}
+.add-node{flex:0 0 32px;width:32px;height:32px;margin:4px 8px 0 2px}
+
+/* Render the growth chart at its real width, not a shrunken 960px canvas. */
+.growth-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px}
+.growth-date-label{font-size:12px;min-width:0;gap:4px}
+.growth-date-input{width:100%;min-width:0;padding:7px 8px}
+.growth-note{font-size:12px;line-height:1.6;color:var(--text-2);margin:8px 0 14px}
+.growth-card{border-radius:10px;box-shadow:none}
+.growth-legend{padding:10px 12px;min-height:44px;gap:6px 12px}
+.growth-legend-item{font-size:12px;flex-wrap:wrap;gap:5px}
+.growth-legend-name{max-width:180px}.growth-legend-status{font-size:11px}
+.growth-chart-scroll{overflow:visible}
+.growth-chart-stage{min-width:0;width:100%;height:300px}
+.growth-svg{width:100%;height:100%}
+.growth-axis-label{font-size:12px;fill:var(--text-2)}
+.growth-tooltip{max-width:calc(100% - 16px);white-space:normal;overflow-wrap:anywhere;transform:none;font-size:12px}
+.growth-empty{font-size:12px;text-align:center;padding:20px}
+@media(max-height:650px){.growth-chart-stage{height:240px}}
+@media(prefers-reduced-motion:reduce){.project-card{animation:none}.completion-fill{transition:none}}

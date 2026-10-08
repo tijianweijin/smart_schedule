@@ -14,3 +14,8 @@ __pycache__/
 docx_review/
 .DS_Store
 Thumbs.db
+android/.gradle/
+android/**/build/
+android/local.properties
+android/*.jks
+android/*.keystore

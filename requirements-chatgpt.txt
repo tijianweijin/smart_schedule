@@ -1,0 +1,2 @@
+# Optional: only ChatGPT OAuth needs these; school imports remain stdlib-only.
+PyJWT[crypto]>=2.10,<3

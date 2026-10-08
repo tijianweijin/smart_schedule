@@ -18,7 +18,27 @@ def fixture(*args):
 
 if __name__ == "__main__":
     if "--live" not in sys.argv:
+        fixture_account = {"account": "", "password": "", "cloudPassword": "", "termStart": ""}
+        def public_fixture():
+            return {"account": fixture_account["account"], "hasPassword": bool(fixture_account["password"]), "hasCloudPassword": bool(fixture_account["cloudPassword"]), "termStart": fixture_account["termStart"], "encrypted": True}
+        def save_fixture(payload):
+            if payload.get("clear"):
+                fixture_account.update(account="", password="", cloudPassword="", termStart="")
+            else:
+                fixture_account.update({key: value for key, value in payload.items() if key in fixture_account and value})
+            return public_fixture()
+        def stored_fixture(cloud=False):
+            from bupt_sync import SyncError
+            password = fixture_account["cloudPassword" if cloud else "password"]
+            if not fixture_account["account"] or not password:
+                raise SyncError("请先在设置中保存账号。", "SETTINGS_REQUIRED")
+            return fixture_account["account"], password, fixture_account["termStart"]
+        ketime_server.public_settings = public_fixture
+        ketime_server.save_settings = save_fixture
+        ketime_server.stored_credentials = stored_fixture
         ketime_server.fetch_timetable = fixture
+        ketime_server.prepare_login = lambda: {"loginId": "fixture-login", "captchaImage": "", "expiresIn": 300}
+        ketime_server.fetch_homework = lambda *args: {"provider": "bupt-ucloud", "accountKey": "a" * 24, "ignored": 0, "fetchedAt": "2026-10-02T00:00:00+08:00", "assignments": [{"sourceId": "work_123", "title": "实验一 <img src=x>", "courseName": "测试课程", "name": "测试课程：实验一 <img src=x>", "dueAt": "2026-10-10T23:59+08:00", "url": "https://ucloud.bupt.edu.cn/"}]}
     service = ThreadingHTTPServer(("127.0.0.1", 0), ketime_server.Handler)
     print(json.dumps({"url": f"http://127.0.0.1:{service.server_port}"}), flush=True)
     service.serve_forever()

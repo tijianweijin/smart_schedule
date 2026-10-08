@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>刻时 · Android Edge 预览</title>
+<style>
+*{box-sizing:border-box}body{margin:0;height:100dvh;display:flex;flex-direction:column;background:#f7f6f3;color:#22211f;font-family:"Segoe UI","Microsoft YaHei",sans-serif}header{padding:12px 18px;background:#fff;border-bottom:1px solid #e6e2da;display:flex;flex-wrap:wrap;align-items:center;gap:10px}h1{font-size:18px;margin:0 12px 0 0;color:#28794b}button,select{font:inherit;font-size:14px;min-height:36px;border:1px solid #e6e2da;background:#fff;border-radius:7px;padding:6px 10px;color:#22211f}button{cursor:pointer}button:focus-visible,select:focus-visible{outline:2px solid #28794b;outline-offset:2px}.notice{flex-basis:100%;font-size:12px;color:#6f6b64;line-height:1.6;margin:0}main{flex:1;min-height:0;display:grid;place-items:center;padding:12px;overflow:auto}#phone-stage{position:relative;background:#fff;border-radius:12px;box-shadow:0 5px 24px #2c282222;overflow:hidden}iframe{display:block;border:0;transform-origin:top left;background:#f7f6f3}#preview-status{margin-left:auto;font-size:12px;color:#28794b}@media(max-width:560px){header{padding:10px;gap:6px}h1{width:100%;font-size:16px}#preview-status{margin-left:0}}
+</style>
+</head>
+<body>
+<header id="preview-toolbar">
+ <h1>刻时 · Android 预览</h1>
+ <label>屏幕 <select id="preview-size" aria-label="预览手机尺寸"><option value="393,851">393 × 851</option><option value="360,800">360 × 800</option><option value="430,932">430 × 932</option></select></label>
+ <button id="preview-rotate" type="button">横 / 竖屏</button>
+ <button id="preview-back" type="button">返回</button>
+ <button id="preview-example" type="button">加载示例</button>
+ <span id="preview-status" role="status" aria-live="polite">正在准备预览…</span>
+ <p class="notice">离线预览：与 Android 共用界面，预览数据单独保存。账号登录、课程 / 作业同步、AI 联网及手机系统能力请在安装版验收；不要在这里填写密码。</p>
+</header>
+<main id="preview-space"><div id="phone-stage"><iframe id="phone-frame" title="刻时 Android 手机界面" sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals"></iframe></div></main>
+<script id="preview-payload" type="application/json">__KETIME_PREVIEW_JSON__</script>
+<script>
+(function(){
+ 'use strict';
+ var frame=document.getElementById('phone-frame'),stage=document.getElementById('phone-stage'),space=document.getElementById('preview-space'),size=document.getElementById('preview-size'),rotated=false;
+ function fit(){var dims=size.value.split(',').map(Number),width=dims[rotated?1:0],height=dims[rotated?0:1],scale=Math.min(1,Math.max(.1,(space.clientWidth-24)/width),Math.max(.1,(space.clientHeight-24)/height));frame.style.width=width+'px';frame.style.height=height+'px';frame.style.transform='scale('+scale+')';stage.style.width=(width*scale)+'px';stage.style.height=(height*scale)+'px';}
+ size.addEventListener('change',fit);document.getElementById('preview-rotate').addEventListener('click',function(){rotated=!rotated;fit();});new ResizeObserver(fit).observe(space);
+ frame.addEventListener('load',function(){document.getElementById('preview-status').textContent='Android __KETIME_ANDROID_VERSION__ · 预览就绪';fit();});
+ document.getElementById('preview-back').addEventListener('click',function(){if(!frame.contentWindow.KetimeAndroid.back())document.getElementById('preview-status').textContent='已在主页面';});
+ document.getElementById('preview-example').addEventListener('click',function(){frame.contentWindow.KetimeEdgePreview.example();});
+ frame.srcdoc=JSON.parse(document.getElementById('preview-payload').textContent);fit();
+})();
+</script>
+</body>
+</html>

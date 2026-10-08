@@ -1,33 +1,28 @@
-/* Requires Playwright for development only, not for end users. */
-const assert=require('node:assert/strict');
-const {spawn}=require('node:child_process');
-const path=require('node:path');
-const fs=require('node:fs');
+const assert=require('node:assert/strict'),{spawn}=require('node:child_process'),path=require('node:path'),fs=require('node:fs');
 const {chromium}=require(process.env.KETIME_PLAYWRIGHT||'playwright');
-const root=path.resolve(__dirname,'..');
-const child=spawn(process.env.KETIME_PYTHON||'python',['-u','-B',path.join(__dirname,'browser_fixture_server.py')],{cwd:root,stdio:['ignore','pipe','pipe']});
-let browser;
+const root=path.resolve(__dirname,'..'),child=spawn(process.env.KETIME_PYTHON||'python',['-u','-B',path.join(__dirname,'browser_fixture_server.py')],{cwd:root,stdio:['ignore','pipe','pipe']});let browser;
 (async()=>{
-  const url=await new Promise((resolve,reject)=>{let buf='';child.stdout.on('data',d=>{buf+=d;let end=buf.indexOf('\n');if(end>=0)try{resolve(JSON.parse(buf.slice(0,end)).url)}catch(e){reject(e)}});child.on('error',reject);child.on('exit',code=>reject(Error('Fixture exited '+code)));setTimeout(()=>reject(Error('Fixture startup timeout')),15000).unref()});
-  browser=await chromium.launch({headless:true,executablePath:process.env.KETIME_BROWSER||undefined});
-  const context=await browser.newContext({viewport:{width:1440,height:960},timezoneId:'Asia/Shanghai'}),page=await context.newPage(),errors=[];
-  page.on('pageerror',e=>errors.push(e.message));page.on('dialog',async d=>{if(d.type()==='alert')throw Error('Unsafe course markup executed');await d.accept()});
-  await page.goto(url);await page.waitForFunction(()=>window.__ketimeDemo&&document.getElementById('bupt-overlay'));
-  assert.equal(await page.locator('.view-tab').count(),3);
-  async function getPreview(){await page.click('#bupt-sync-btn');await page.fill('#bupt-account','test_account');await page.fill('#bupt-password','test_password_not_saved');await page.click('#bupt-fetch');await page.waitForSelector('#bupt-preview:not([hidden])');assert.equal(await page.inputValue('#bupt-password'),'')}
-  await getPreview();assert.equal(await page.locator('#bupt-courses tr').count(),3);assert.equal(await page.locator('#bupt-courses img').count(),0);
-  await page.click('#bupt-import');assert.match(await page.textContent('#bupt-status'),/导入成功/);await page.click('#bupt-close');
-  let state=await page.evaluate(()=>window.__ketimeDemo.getState());assert.equal(state.schedules.length,3);assert.equal(state.schedules.filter(e=>e.source).length,3);assert.equal(await page.locator('.event-block img').count(),0);
-  await page.locator('.event-check').first().click();state=await page.evaluate(()=>window.__ketimeDemo.getState());assert.equal(state.schedules[0].done,true);
-  await page.reload();await page.waitForFunction(()=>window.__ketimeDemo);state=await page.evaluate(()=>window.__ketimeDemo.getState());assert.equal(state.schedules[0].done,true);assert.equal(state.schedules[0].source.location,'测试教学楼 101');
-  await page.waitForTimeout(5100);await getPreview();assert.match(await page.textContent('#bupt-summary'),/新增 0/);await page.click('#bupt-import');await page.click('#bupt-close');state=await page.evaluate(()=>window.__ketimeDemo.getState());assert.equal(state.schedules.length,3);assert.equal(state.schedules[0].done,true);
-  for(const view of ['projects','growth','schedule']){await page.click('[data-view="'+view+'"]');assert.equal(await page.locator('#view-'+view).isVisible(),true)}
-  await page.click('#bupt-sync-btn');await page.locator('.bupt-backup summary').click();const downloadEvent=page.waitForEvent('download');await page.click('#bupt-export');const download=await downloadEvent,content=fs.readFileSync(await download.path(),'utf8');assert.equal(JSON.parse(content).schedules.length,3);assert(!content.includes('test_password_not_saved'));assert(!content.includes('test_account'));
-  await page.keyboard.press('Escape');assert.equal(await page.locator('#bupt-overlay').isVisible(),false);
-  await page.click('#add-untimed-todo');await page.fill('#untimed-input','旧功能回归测试');await page.press('#untimed-input','Enter');assert.match(await page.textContent('#untimed-list'),/旧功能回归测试/);
-  await page.click('#next-week');assert.match(await page.textContent('#untimed-list'),/旧功能回归测试/);await page.click('#today-btn');
-  const artifacts=path.join(root,'.local');fs.mkdirSync(artifacts,{recursive:true});await page.screenshot({path:path.join(artifacts,'timetable-desktop.png')});
-  await page.setViewportSize({width:390,height:844});await page.click('#bupt-sync-btn');assert.equal(await page.locator('#bupt-fetch').isVisible(),true);const dimensions=await page.locator('.bupt-modal').boundingBox();assert(dimensions.width<390);await page.screenshot({path:path.join(artifacts,'timetable-mobile.png')});await page.keyboard.press('Escape');
-  assert.deepEqual(errors,[]);console.log('Browser checks passed: import, XSS escaping, done state, reload, repeat sync, three pages, backup, inbox, mobile.');
-  await context.close();
+ const url=await new Promise((resolve,reject)=>{let data='';child.stdout.on('data',d=>{data+=d;if(data.includes('\n'))try{resolve(JSON.parse(data.split('\n')[0]).url)}catch(e){reject(e)}});child.on('error',reject);setTimeout(()=>reject(Error('Service timeout')),15000).unref()});
+ browser=await chromium.launch({headless:true,executablePath:process.env.KETIME_BROWSER||undefined});const context=await browser.newContext({viewport:{width:1440,height:960},timezoneId:'Asia/Shanghai'}),page=await context.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));page.on('dialog',async d=>{if(d.type()==='alert')throw Error('Unsafe markup');await d.accept()});
+ await page.goto(url);await page.waitForFunction(()=>window.KetimeAccount);
+ assert.equal(await page.locator('.view-tab').count(),3);assert.equal(await page.textContent('#bupt-sync-btn'),'导入课表');
+ await page.click('#bupt-sync-btn');await page.waitForSelector('#settings-overlay.visible');await page.waitForTimeout(150);
+ await page.fill('#settings-account','test_account');await page.fill('#settings-password','test_jw_secret');await page.fill('#settings-cloud-password','test_cloud_secret');await page.click('#settings-save');await page.waitForFunction(()=>document.getElementById('settings-status').textContent.includes('已在本机加密保存'));
+ assert.equal(await page.inputValue('#settings-password'),'');assert.equal(await page.inputValue('#settings-cloud-password'),'');await page.click('#settings-close');await page.reload();
+ await page.click('#settings-btn');await page.waitForFunction(()=>document.getElementById('settings-account').value==='test_account');assert.match(await page.getAttribute('#settings-password','placeholder'),/已保存/);await page.click('#settings-close');
+ await page.click('#bupt-sync-btn');await page.waitForFunction(()=>window.__ketimeDemo.getState().schedules.length===3);assert.equal(await page.locator('#bupt-account').count(),0);assert.equal(await page.locator('.event-block img').count(),0);
+ await page.locator('.event-check').first().click();assert((await page.evaluate(()=>window.__ketimeDemo.getState())).schedules[0].done);
+ await page.waitForTimeout(5100);await page.click('#bupt-sync-btn');await page.waitForFunction(()=>document.getElementById('sync-status').textContent.includes('新增 0'));assert.equal((await page.evaluate(()=>window.__ketimeDemo.getState())).schedules.length,3);assert((await page.evaluate(()=>window.__ketimeDemo.getState())).schedules[0].done);
+ const date=(await page.evaluate(()=>window.__ketimeDemo.getState())).schedules[0].date;
+ await page.click('#holiday-btn');await page.click('#holiday-add');await page.fill('#holiday-rules input[aria-label="放假开始"]',date);await page.fill('#holiday-rules input[aria-label="放假结束"]',date);await page.click('#holiday-save');assert.equal(await page.locator('.event-block').count(),0);await page.reload();await page.waitForFunction(()=>window.__ketimeDemo);assert.equal((await page.evaluate(()=>window.__ketimeDemo.getState())).holidays.length,1);
+ await page.click('#ucloud-btn');await page.waitForFunction(()=>window.__ketimeDemo.getState().inbox.length===1);assert.equal(await page.locator('#ucloud-account').count(),0);assert.equal(await page.locator('#ucloud-overlay').isVisible(),false);assert.equal(await page.locator('#untimed-list img').count(),0);assert.equal(await page.locator('.homework-due').count(),1);
+ assert.equal((await page.evaluate(()=>window.__ketimeDemo.getState())).inbox[0].name,'测试课程：实验一 <img src=x>');assert((await page.textContent('#untimed-list')).includes('测试课程：实验一 <img src=x>'));await page.evaluate(()=>{const key='ketime-demo-v0.1',state=JSON.parse(localStorage.getItem(key));state.inbox[0].name='【测试课程】实验一 <img src=x>';state.inbox[0].source.snapshotName=state.inbox[0].name;localStorage.setItem(key,JSON.stringify(state))});await page.reload();await page.waitForFunction(()=>window.__ketimeDemo);assert.equal((await page.evaluate(()=>window.__ketimeDemo.getState())).inbox[0].name,'测试课程：实验一 <img src=x>');
+ await page.locator('.homework-item .untimed-toggle').click();await page.reload();await page.waitForFunction(()=>window.__ketimeDemo);assert((await page.evaluate(()=>window.__ketimeDemo.getState())).inbox[0].done);await page.waitForTimeout(5100);await page.click('#ucloud-btn');await page.waitForFunction(()=>document.getElementById('sync-status').textContent.includes('作业已更新'));assert.equal((await page.evaluate(()=>window.__ketimeDemo.getState())).inbox.length,1);assert((await page.evaluate(()=>window.__ketimeDemo.getState())).inbox[0].done);
+ await page.locator('.homework-item .untimed-delete').click();await page.waitForTimeout(5100);await page.click('#ucloud-btn');await page.waitForFunction(()=>document.getElementById('sync-status').textContent.includes('删除跳过 1'));assert.equal((await page.evaluate(()=>window.__ketimeDemo.getState())).inbox.length,0);
+ for(const view of ['projects','growth','schedule']){await page.click('[data-view="'+view+'"]');assert(await page.locator('#view-'+view).isVisible())}
+ await page.click('#settings-btn');await page.locator('.bupt-backup summary').click();const downloadPromise=page.waitForEvent('download');await page.click('#bupt-export');const download=await downloadPromise,backup=fs.readFileSync(await download.path(),'utf8');assert.equal(JSON.parse(backup).holidays.length,1);assert(!backup.includes('test_jw_secret'));assert(!backup.includes('test_cloud_secret'));const storage=await page.evaluate(()=>JSON.stringify(localStorage));assert(!storage.includes('test_jw_secret'));assert(!storage.includes('test_cloud_secret'));
+ await page.click('#settings-clear');await page.waitForFunction(()=>document.getElementById('settings-status').textContent.includes('已清除'));await page.click('#settings-close');await page.click('#ucloud-btn');await page.waitForSelector('#settings-overlay.visible');assert.equal((await page.evaluate(()=>window.__ketimeDemo.getState())).holidays.length,1);
+ await page.setViewportSize({width:390,height:844});assert((await page.locator('#settings-overlay .modal').boundingBox()).width<390);const folder=path.join(root,'.local');fs.mkdirSync(folder,{recursive:true});await page.screenshot({path:path.join(folder,'settings-mobile.png')});await page.keyboard.press('Escape');assert.deepEqual(errors,[]);
+ console.log('Settings/direct-import browser checks passed: gear, remembered account, no plaintext storage/backup, one-click timetable/homework, completion, holiday persistence, dedupe, clear, mobile.');await context.close();
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{if(browser)await browser.close();child.kill()});

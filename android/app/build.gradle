@@ -1,0 +1,51 @@
+plugins { id 'com.android.application'; id 'com.chaquo.python' }
+
+def webFiles = ['ketime _demo_0.1.html', '刻时 小样.html', 'bupt-import.js', 'bupt-ui.js', 'school-tools.js', 'school-ui.js', 'schedule-overlap.js', 'daily-reminders.js', 'chatgpt-ui.js', 'ai-providers.js', 'schedule-assistant.js']
+def pythonFiles = ['bupt_sync.py', 'ucloud_sync.py', 'local_settings.py', 'chatgpt_client.py', 'deepseek_client.py', 'schedule_assistant.py', 'ketime_server.py']
+tasks.register('syncKetimeWeb', Sync) {
+    from(rootProject.file('..')) { include webFiles }
+    from('src/main/web')
+    into(layout.buildDirectory.dir('generated/ketime/assets/web'))
+}
+tasks.register('syncKetimePython', Sync) {
+    from(rootProject.file('..')) { include pythonFiles }
+    into(layout.buildDirectory.dir('generated/ketime/python'))
+}
+android {
+    namespace 'cn.ketime.app'
+    buildFeatures { buildConfig true }
+    compileSdk 35
+    defaultConfig {
+        applicationId 'cn.ketime.app'
+        minSdk 26
+        targetSdk 35
+        versionCode 10015
+        versionName '1.0.15'
+        ndk { abiFilters 'arm64-v8a', 'x86_64' }
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+    sourceSets { main { assets.srcDir layout.buildDirectory.dir('generated/ketime/assets') } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    buildTypes { release { minifyEnabled false } }
+    packaging { jniLibs { useLegacyPackaging false } }
+}
+chaquopy {
+    defaultConfig {
+        version = '3.13'
+        if (System.getenv('KETIME_BUILD_PYTHON')) buildPython(System.getenv('KETIME_BUILD_PYTHON'))
+        pip { install 'PyJWT[crypto]>=2.10,<3' }
+    }
+    sourceSets { main { srcDir layout.buildDirectory.dir('generated/ketime/python').get().asFile } }
+}
+tasks.configureEach { task ->
+    // A local cloud-sync client adds transient metadata inside generated Python
+    // environments. Re-extract instead of snapshotting these volatile outputs.
+    if (task.name.contains('Python') && task.name != 'syncKetimePython')
+        task.doNotTrackState('Generated Python environment may contain transient local sync metadata')
+    if (task.name == 'preBuild' || task.name.contains('Assets')) task.dependsOn('syncKetimeWeb')
+    if (task.name.contains('Python') && task.name != 'syncKetimePython') task.dependsOn('syncKetimePython')
+}
+dependencies {
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+}
