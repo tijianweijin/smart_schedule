@@ -27,8 +27,16 @@ def main():
     source=ROOT/'android/app/build/outputs/apk/release/app-release-unsigned.apk'
     destination=ROOT/'android/dist/刻时-Android-1.0.apk'
     destination.parent.mkdir(parents=True,exist_ok=True)
-    subprocess.run([str(tools/'sdk/build-tools/35.0.0/apksigner.bat'),'sign','--ks',str(key),'--ks-key-alias','ketime','--ks-pass','env:KETIME_SIGN_PASSWORD','--key-pass','env:KETIME_SIGN_PASSWORD','--out',str(destination),str(source)],env=env,check=True)
-    subprocess.run([str(tools/'sdk/build-tools/35.0.0/apksigner.bat'),'verify','--verbose',str(destination)],env=env,check=True)
+    # Sign a new file first: scanners/cloud-sync may memory-map the previous APK,
+    # preventing truncation. Never damage a working package on signing failure.
+    with tempfile.TemporaryDirectory(prefix='release-sign-',dir=destination.parent) as staging:
+        staged=Path(staging)/'ketime-signed.apk'
+        subprocess.run([str(tools/'sdk/build-tools/35.0.0/apksigner.bat'),'sign','--ks',str(key),'--ks-key-alias','ketime','--ks-pass','env:KETIME_SIGN_PASSWORD','--key-pass','env:KETIME_SIGN_PASSWORD','--out',str(staged),str(source)],env=env,check=True)
+        subprocess.run([str(tools/'sdk/build-tools/35.0.0/apksigner.bat'),'verify','--verbose',str(staged)],env=env,check=True)
+        staged.replace(destination)
+        staged_idsig=staged.with_suffix('.apk.idsig')
+        if staged_idsig.exists():
+            staged_idsig.replace(destination.with_suffix('.apk.idsig'))
     print('Signed Android 1.0 release APK. Keep .local/android-signing backed up privately; never commit it.')
 
 if __name__=='__main__':main()

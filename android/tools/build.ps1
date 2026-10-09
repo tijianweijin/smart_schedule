@@ -21,7 +21,11 @@ if(!$Release){
     $artifact=Join-Path $projectRoot 'android\app\build\outputs\apk\debug\app-debug.apk'
     $dist=Join-Path $projectRoot 'android\dist'
     New-Item -ItemType Directory -Path $dist -Force | Out-Null
-    Copy-Item -LiteralPath $artifact -Destination (Join-Path $dist '刻时-Android-1.0-debug.apk') -Force
+    # Publish a fresh file without truncating an APK memory-mapped by Windows.
+    $debugDestination=Join-Path $dist '刻时-Android-1.0-debug.apk'
+    $debugStaged=Join-Path $dist ('ketime-debug-staging-'+[Guid]::NewGuid().ToString('N')+'.apk')
+    Copy-Item -LiteralPath $artifact -Destination $debugStaged
+    [System.IO.File]::Move($debugStaged,$debugDestination,$true)
     Get-FileHash -LiteralPath (Join-Path $dist '刻时-Android-1.0-debug.apk') -Algorithm SHA256
     if($Install){& (Join-Path $env:ANDROID_HOME 'platform-tools\adb.exe') install -r $artifact;if($LASTEXITCODE -ne 0){throw 'APK installation failed.'}}
 }

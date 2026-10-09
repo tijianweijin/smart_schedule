@@ -14,7 +14,7 @@ def android_response(status, body, content_type, request_path):
     if status == 200 and urlsplit(request_path).path == '/android-mobile.css':
         return body, 'text/css; charset=utf-8'
     if isinstance(body, dict) and 'csrfToken' in body:
-        return dict(body, version='1.0.15', platform='android', credentialStorage='Android Keystore'), content_type
+        return dict(body, version='1.0.21', platform='android', credentialStorage='Android Keystore'), content_type
     if status == 200 and content_type.startswith('text/html') and isinstance(body, bytes):
         page = body.decode('utf-8')
         page = page.replace('</head>', '<script>window.KetimeAndroid=true</script><link rel="stylesheet" href="/android-mobile.css"></head>', 1)
@@ -47,6 +47,11 @@ def configure_storage(private_root, crypto):
     deepseek_client.crypt = crypt
     deepseek_client.VAULT_PATH = root / 'deepseek.aes'
     deepseek_client.MAGIC = b'KETIME-ANDROID-DEEPSEEK-1\n'
+    import api_clients
+    api_clients.crypt = crypt
+    for provider in ('kimi', 'minimax'):
+        api_clients.VAULT_PATHS[provider] = root / (provider + '.aes')
+        api_clients.MAGICS[provider] = ('KETIME-ANDROID-' + provider.upper() + '-1\n').encode()
     if crypt(crypt(b'ketime-keystore-check'), decrypt=True) != b'ketime-keystore-check':
         raise RuntimeError('Keystore verification failed')
 

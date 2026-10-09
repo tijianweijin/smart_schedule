@@ -164,7 +164,8 @@
       if(window.KetimeModelSettings&&window.KetimeModelSettings.prepareAssistant)providerOptions=await window.KetimeModelSettings.prepareAssistant();
       else if(window.KetimeModelSettings&&window.KetimeModelSettings.ensureApplied)await window.KetimeModelSettings.ensureApplied();
       var result = await account.call('/api/chatgpt/assistant', Object.assign({messages:submitted,context:api.context()},providerOptions));
-      var modelPattern=providerOptions.provider==='deepseek'?/^deepseek-[A-Za-z0-9._-]+$/:/^gpt-\d/;
+      var modelPatterns={gpt:/^gpt-\d/,deepseek:/^deepseek-[A-Za-z0-9._-]+$/,kimi:/^(kimi-k|moonshot-v)[A-Za-z0-9._-]+$/,minimax:/^MiniMax-M\d[A-Za-z0-9._-]*$/};
+      var modelPattern=modelPatterns[providerOptions.provider||'gpt'];
       if (result.completed !== true || !Array.isArray(result.events) || typeof result.message !== 'string' || !result.message.trim() || typeof result.model !== 'string' || !modelPattern.test(result.model) || result.provider&&result.provider!==(providerOptions.provider||'gpt') || ['auto','none','minimal','low','medium','high','xhigh','max'].indexOf(result.reasoningEffort) < 0) throw Error('回复未完成或模型配置无效，未创建日程。');
       if(result.eventCount!==undefined&&(!Number.isInteger(result.eventCount)||result.eventCount!==result.events.length))throw Error('识别数量与日程明细不一致，未创建任何日程，请重试。');
       var candidates = result.events.length ? sortEvents(validate(result.events,api.context(),true)) : [];

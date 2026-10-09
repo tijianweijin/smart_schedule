@@ -1,7 +1,7 @@
 plugins { id 'com.android.application'; id 'com.chaquo.python' }
 
-def webFiles = ['ketime _demo_0.1.html', '刻时 小样.html', 'bupt-import.js', 'bupt-ui.js', 'school-tools.js', 'school-ui.js', 'schedule-overlap.js', 'daily-reminders.js', 'chatgpt-ui.js', 'ai-providers.js', 'schedule-assistant.js']
-def pythonFiles = ['bupt_sync.py', 'ucloud_sync.py', 'local_settings.py', 'chatgpt_client.py', 'deepseek_client.py', 'schedule_assistant.py', 'ketime_server.py']
+def webFiles = ['ketime _demo_0.1.html', '刻时 小样.html', 'state-storage.js', 'bupt-import.js', 'bupt-ui.js', 'school-tools.js', 'school-ui.js', 'schedule-overlap.js', 'daily-reminders.js', 'chatgpt-ui.js', 'ai-providers.js', 'schedule-assistant.js']
+def pythonFiles = ['bupt_sync.py', 'ucloud_sync.py', 'local_settings.py', 'chatgpt_client.py', 'deepseek_client.py', 'api_clients.py', 'schedule_assistant.py', 'ketime_server.py']
 tasks.register('syncKetimeWeb', Sync) {
     from(rootProject.file('..')) { include webFiles }
     from('src/main/web')
@@ -19,8 +19,8 @@ android {
         applicationId 'cn.ketime.app'
         minSdk 26
         targetSdk 35
-        versionCode 10015
-        versionName '1.0.15'
+        versionCode 10021
+        versionName '1.0.21'
         ndk { abiFilters 'arm64-v8a', 'x86_64' }
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }

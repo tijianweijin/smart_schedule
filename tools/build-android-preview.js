@@ -15,5 +15,8 @@ app=app.replace('</body>','<script data-ketime-android-mobile>\n'+androidJS+'\n<
 const version=fs.readFileSync(path.join(root,'android/app/build.gradle'),'utf8').match(/versionName '([^']+)'/)[1];
 const shell=fs.readFileSync(path.join(preview,'shell.html'),'utf8').replaceAll('__KETIME_ANDROID_VERSION__',version),payload=JSON.stringify(app).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029'),output=shell.replace('__KETIME_PREVIEW_JSON__',()=>payload);
 const dist=path.join(root,'android/dist');fs.mkdirSync(dist,{recursive:true});
-fs.writeFileSync(path.join(dist,'刻时-Android-Edge预览.html'),output,'utf8');
+const destination=path.join(dist,'刻时-Android-Edge预览.html'),staged=path.join(dist,'ketime-edge-preview-staging-'+process.pid+'.html');
+fs.writeFileSync(staged,output,'utf8');
+// A browser/scanner may map the previous HTML; replace rather than truncate it.
+fs.renameSync(staged,destination);
 console.log('Standalone Android Edge preview generated. No service or emulator required.');

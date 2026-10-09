@@ -16,10 +16,14 @@ from ucloud_sync import prepare_login, fetch_homework
 from local_settings import public_settings, save_settings, stored_credentials
 from chatgpt_client import CLIENT as CHATGPT
 from deepseek_client import CLIENT as DEEPSEEK
+from api_clients import KIMI, MINIMAX
+
+API_CLIENTS = {'deepseek': DEEPSEEK, 'kimi': KIMI, 'minimax': MINIMAX}
+API_ACTIONS = {'status', 'connect', 'models', 'configure', 'test', 'disconnect', 'assistant'}
 
 ROOT = Path(__file__).resolve().parent
 MAIN_FILE = "ketime _demo_0.1.html"
-STATIC_FILES = {MAIN_FILE, "刻时 小样.html", "bupt-import.js", "bupt-ui.js", "school-tools.js", "school-ui.js", "schedule-overlap.js", "daily-reminders.js", "chatgpt-ui.js", "ai-providers.js", "schedule-assistant.js"}
+STATIC_FILES = {MAIN_FILE, "刻时 小样.html", "state-storage.js", "bupt-import.js", "bupt-ui.js", "school-tools.js", "school-ui.js", "schedule-overlap.js", "daily-reminders.js", "chatgpt-ui.js", "ai-providers.js", "schedule-assistant.js"}
 BOOT_TOKEN = secrets.token_urlsafe(32)
 SYNC_LOCK = threading.Lock()
 LAST_REQUEST = 0.0
@@ -58,7 +62,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 CHATGPT.callback(parse_qs(urlsplit(self.path).query, keep_blank_values=True, max_num_fields=20))
-                text = "ChatGPT 已连接。请返回刻时的设置 → 智能模型选择 → GPT，选择模型并发送消息。"
+                text = "ChatGPT 已连接。请返回刻时的设置 → 智能模型选择 → ChatGPT，选择模型并发送消息。"
                 status = 200
             except SyncError as exc:
                 if exc.code == "invalid_grant":
@@ -86,7 +90,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         path = unquote(urlsplit(self.path).path)
         if path == "/api/config":
-            self.send(200, {"csrfToken": BOOT_TOKEN, "version": "0.9.0", "provider": "bupt", "chatgpt": True, "deepseek": True, "modelSettings": True, "scheduleAssistant": True, "assistantDrafts": True})
+            self.send(200, {"csrfToken": BOOT_TOKEN, "version": "0.10.0", "provider": "bupt", "chatgpt": True, "deepseek": True, "kimi": True, "minimax": True, "modelSettings": True, "scheduleAssistant": True, "assistantDrafts": True})
             return
         name = MAIN_FILE if path == "/" else path[1:]
         if name not in STATIC_FILES or not (ROOT / name).is_file():
@@ -100,7 +104,11 @@ class Handler(BaseHTTPRequestHandler):
         if not self.safe_origin() or not hmac.compare_digest(self.headers.get("X-Ketime-Token", ""), BOOT_TOKEN):
             self.send(403, {"error": "请求验证失败，请刷新刻时页面。"})
             return
-        if self.path not in ("/api/bupt/timetable", "/api/ucloud/prepare", "/api/ucloud/homework", "/api/settings/read", "/api/settings/save", "/api/chatgpt/status", "/api/chatgpt/connect", "/api/chatgpt/models", "/api/chatgpt/configure", "/api/chatgpt/test", "/api/chatgpt/assistant", "/api/chatgpt/disconnect", "/api/chatgpt/select", "/api/deepseek/status", "/api/deepseek/connect", "/api/deepseek/models", "/api/deepseek/configure", "/api/deepseek/test", "/api/deepseek/disconnect"):
+        segments = self.path.split('/')
+        api_provider = segments[2] if len(segments) == 4 and segments[1] == 'api' else ''
+        api_action = segments[3] if len(segments) == 4 else ''
+        api_route = api_provider in API_CLIENTS and api_action in API_ACTIONS
+        if not api_route and self.path not in ("/api/bupt/timetable", "/api/ucloud/prepare", "/api/ucloud/homework", "/api/settings/read", "/api/settings/save", "/api/chatgpt/status", "/api/chatgpt/connect", "/api/chatgpt/models", "/api/chatgpt/configure", "/api/chatgpt/test", "/api/chatgpt/assistant", "/api/chatgpt/disconnect", "/api/chatgpt/select"):
             self.send(404, {"error": "接口不存在。"})
             return
         if self.headers.get("Content-Type", "").split(";")[0] != "application/json":
@@ -108,7 +116,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
-            if not 0 < length <= (131072 if self.path == "/api/chatgpt/assistant" else 16384):
+            if not 0 < length <= (131072 if api_action == 'assistant' else 16384):
                 raise ValueError
         except ValueError:
             self.send(413, {"error": "请求数据大小不正确。"})
@@ -120,15 +128,15 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, UnicodeError):
             self.send(400, {"error": "请求格式不正确。"})
             return
-        if self.path.startswith('/api/deepseek/'):
+        if api_route:
             try:
-                action = self.path.rsplit('/', 1)[1]
-                result = DEEPSEEK.status() if action == 'status' else DEEPSEEK.models() if action == 'models' else DEEPSEEK.disconnect() if action == 'disconnect' else getattr(DEEPSEEK, action)(payload)
+                client = API_CLIENTS[api_provider]
+                result = getattr(client, api_action)() if api_action in ('status', 'models', 'disconnect') else getattr(client, api_action)(payload)
                 self.send(200, result)
             except SyncError as exc:
                 self.send(exc.status, {'error': str(exc), 'code': exc.code})
             except Exception:
-                self.send(502, {'error': 'DeepSeek 请求未完成，请检查连接后重试。', 'code': 'DEEPSEEK_FAILED'})
+                self.send(502, {'error': '所选智能模型请求未完成，请检查连接后重试。', 'code': api_provider.upper() + '_FAILED'})
             finally:
                 payload.clear()
             return
@@ -145,9 +153,9 @@ class Handler(BaseHTTPRequestHandler):
                     result = CHATGPT.configure(payload)
                 elif action == "assistant":
                     provider = payload.pop('provider', 'gpt')
-                    if provider not in ('gpt', 'deepseek'):
-                        raise SyncError('此提供方尚未接入，未调用其他模型。', 'AI_PROVIDER')
-                    result = (DEEPSEEK if provider == 'deepseek' else CHATGPT).assistant(payload)
+                    if provider != 'gpt' and provider not in API_CLIENTS:
+                        raise SyncError('提供方无效，未调用其他模型。', 'AI_PROVIDER')
+                    result = (CHATGPT if provider == 'gpt' else API_CLIENTS[provider]).assistant(payload)
                 elif action == "disconnect":
                     result = CHATGPT.disconnect()
                 elif action == "select":

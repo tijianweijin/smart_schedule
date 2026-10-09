@@ -10,6 +10,7 @@ from unittest.mock import patch
 import local_settings
 import chatgpt_client
 import deepseek_client
+import api_clients
 from bupt_sync import SyncError
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -35,6 +36,8 @@ class AndroidRuntimeTest(unittest.TestCase):
         for module in (local_settings,chatgpt_client,deepseek_client):
             for attr in ('crypt','VAULT_PATH','MAGIC'):
                 guard=patch.object(module,attr,getattr(module,attr));guard.start();self.addCleanup(guard.stop)
+        for guard in (patch.object(api_clients,'crypt',api_clients.crypt),patch.dict(api_clients.VAULT_PATHS),patch.dict(api_clients.MAGICS)):
+            guard.start();self.addCleanup(guard.stop)
         runtime.configure_storage(self.temp.name,FakeCrypto())
     def test_school_roundtrip_and_private_storage(self):
         self.assertEqual(local_settings.read_settings()['account'],'')
@@ -73,13 +76,25 @@ class AndroidRuntimeTest(unittest.TestCase):
     def test_no_private_material_in_packaging_rules(self):
         rules=(ROOT/'android/app/build.gradle').read_text(encoding='utf-8')
         self.assertNotIn("include '**'",rules)
-        for source in ('bupt_sync.py','ucloud_sync.py','chatgpt_client.py','schedule_assistant.py'):
+        for source in ('bupt_sync.py','ucloud_sync.py','chatgpt_client.py','schedule_assistant.py','api_clients.py'):
             self.assertIn(source,rules)
         manifest=(ROOT/'android/app/src/main/AndroidManifest.xml').read_text(encoding='utf-8')
         self.assertIn('android:allowBackup="false"',manifest)
         java=(ROOT/'android/app/src/main/java/cn/ketime/app/MainActivity.java').read_text(encoding='utf-8')
         self.assertIn('setAllowFileAccess(false)',java)
         self.assertNotIn('addJavascriptInterface(new AndroidVault',java)
+
+    def test_kimi_minimax_vaults_use_android_keystore_bridge(self):
+        for provider in ('kimi','minimax'):
+            data={'apiKey':'sk-synthetic-android-'+provider,'model':'fixture','reasoningEffort':'auto'}
+            api_clients.write_vault(provider,data)
+            self.assertEqual(api_clients.read_vault(provider),data)
+            path=api_clients.VAULT_PATHS[provider]
+            self.assertEqual(path,Path(self.temp.name)/(provider+'.aes'))
+            raw=path.read_bytes()
+            self.assertNotIn(data['apiKey'].encode(),raw)
+            self.assertTrue(raw.startswith(('KETIME-ANDROID-'+provider.upper()+'-1\n').encode()))
+            self.assertNotIn('apiKey',api_clients.APIKeyClient(provider).status())
 
     def test_android_stylesheet_mime_and_html_injection(self):
         css=b'body{color:green}'

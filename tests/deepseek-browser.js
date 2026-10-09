@@ -20,6 +20,7 @@ const root=path.resolve(__dirname,'..'),child=spawn(process.env.KETIME_PYTHON||'
   else if(action==='disconnect'){connected=false;data={connected:false};}
   return route.fulfill({status:code,contentType:'application/json',body:JSON.stringify(data)});
  });
+ await page.route('**/api/kimi/**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify({connected:false,encrypted:true})}));
  await page.goto(url);await page.click('#settings-btn');await page.locator('#chatgpt-panel summary').click();
  assert.equal(await page.locator('#chatgpt-panel summary').textContent(),'智能模型选择');
  assert.equal(await page.locator('#ai-provider option').count(),4);
@@ -41,11 +42,11 @@ const root=path.resolve(__dirname,'..'),child=spawn(process.env.KETIME_PYTHON||'
  await page.selectOption('#deepseek-model','deepseek-flash');await page.waitForFunction(()=>!document.getElementById('deepseek-send').disabled);stale=true;await page.click('#deepseek-refresh');await page.waitForFunction(()=>document.getElementById('deepseek-status').textContent.includes('原选择已不可用'));assert(await page.locator('#deepseek-send').isDisabled());await page.click('#deepseek-save-model');await page.waitForFunction(()=>!document.getElementById('deepseek-send').disabled);
  await page.fill('#deepseek-key',key);await page.click('#settings-close');await page.click('#settings-btn');assert.equal(await page.locator('#deepseek-key').inputValue(),'');
  await page.waitForFunction(()=>!document.getElementById('ai-provider').disabled);await page.selectOption('#ai-provider','kimi');assert(await page.locator('#ai-deepseek-settings').isHidden());
- lastAssistant=null;await page.click('#settings-close');await page.click('#schedule-assistant-btn');await page.fill('#assistant-input','测试未接入');await page.click('#assistant-send');await page.waitForFunction(()=>document.getElementById('assistant-messages').textContent.includes('尚未接入'));assert.equal(lastAssistant,null);await page.click('#assistant-close');
+ lastAssistant=null;await page.click('#settings-close');await page.click('#schedule-assistant-btn');await page.fill('#assistant-input','测试未连接');await page.click('#assistant-send');await page.waitForFunction(()=>document.getElementById('assistant-messages').textContent.includes('连接 Kimi'));assert.equal(lastAssistant,null);await page.click('#assistant-close');
  await page.click('#settings-btn');await page.selectOption('#ai-provider','gpt');assert(await page.locator('#ai-gpt-settings').isVisible());await page.selectOption('#ai-provider','deepseek');await page.waitForFunction(()=>!document.getElementById('deepseek-send').disabled);
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.locator('#deepseek-model').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(root,`.local/deepseek-settings-${process.pid}.png`)});
  await page.click('#deepseek-disconnect');await page.waitForFunction(()=>document.getElementById('deepseek-status').textContent.includes('尚未连接'));assert(await page.locator('#deepseek-send').isDisabled());assert.equal(testCalls,2);assert.deepEqual(errors,[]);await context.close();
  const offline=await browser.newContext(),preview=await offline.newPage(),requests=[];preview.on('request',r=>{if(/^https?:/.test(r.url()))requests.push(r.url());});
  await preview.goto(pathToFileURL(path.join(root,'android/dist/刻时-Android-Edge预览.html')).href);const frame=preview.frames().find(f=>f.parentFrame());await frame.click('#settings-btn');await frame.locator('#chatgpt-panel summary').click();await frame.selectOption('#ai-provider','deepseek');assert(await frame.locator('#deepseek-key').isDisabled());assert(await frame.locator('#deepseek-connect').isDisabled());assert.deepEqual(requests,[]);await offline.close();
- console.log('DeepSeek synthetic browser checks passed: providers, key clearing/privacy, model update and persistence, autosave, reply/error, shared assistant routing, unsupported provider without fallback, mobile and offline preview.');
+ console.log('DeepSeek synthetic browser checks passed: providers, key clearing/privacy, model update and persistence, autosave, reply/error, shared assistant routing, unconnected provider without fallback, mobile and offline preview.');
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{if(browser)await browser.close();child.kill();});

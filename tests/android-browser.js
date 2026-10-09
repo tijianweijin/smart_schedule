@@ -52,7 +52,7 @@ const root=path.resolve(__dirname,'..'),child=spawn(process.env.KETIME_PYTHON||'
  }
  await page.setViewportSize({width:393,height:851});await page.waitForTimeout(100);
  const checkLayout=await page.locator('.event-block').evaluate(block=>{const rect=block.getBoundingClientRect(),check=block.querySelector('.event-check').getBoundingClientRect(),title=block.querySelector('.event-title');return{bottomGap:rect.bottom-check.bottom,belowTitle:check.top>=title.getBoundingClientRect().bottom,titleStyle:getComputedStyle(title).whiteSpace};});
- assert(checkLayout.bottomGap>=0&&checkLayout.bottomGap<=5);assert(checkLayout.belowTitle);assert.equal(checkLayout.titleStyle,'normal');
+ assert(checkLayout.bottomGap>=0&&checkLayout.bottomGap<=5);assert(checkLayout.belowTitle);assert.equal(checkLayout.titleStyle,'pre-wrap');
  await page.locator('.event-check').click();assert((await page.evaluate(()=>window.__ketimeDemo.getState().schedules[0])).done);assert.equal(await page.locator('#schedule-overlay').isVisible(),false);
  assert.equal(await page.evaluate(()=>window.__ketimeDemo.getState().inbox[0].source.dueAt),sourceBefore);
  await page.locator('#schedule-wrap').evaluate(e=>e.scrollLeft=e.scrollWidth);await page.waitForTimeout(50);assert(await page.evaluate(()=>document.getElementById('schedule-wrap').scrollLeft>0));

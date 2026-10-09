@@ -122,7 +122,7 @@ class DeepSeekServerTests(unittest.TestCase):
         with patch.object(ketime_server.DEEPSEEK,'assistant',return_value={'completed':True}) as ds_call,patch.object(ketime_server.CHATGPT,'assistant') as gpt:
             with self.post('/api/chatgpt/assistant',{'provider':'deepseek','messages':[],'context':{}}):pass
             ds_call.assert_called_once();gpt.assert_not_called()
-            with self.assertRaises(HTTPError):self.post('/api/chatgpt/assistant',{'provider':'kimi'})
+            with self.assertRaises(HTTPError):self.post('/api/chatgpt/assistant',{'provider':'unknown'})
             gpt.assert_not_called();self.assertEqual(ds_call.call_count,1)
     def test_no_download_of_vault(self):
         for path in ['/.local/deepseek.dpapi','/deepseek.aes','/deepseek_client.py']:

@@ -37,6 +37,7 @@ public final class MainActivity extends Activity {
     private byte[] pendingExport;
     private volatile boolean trustedPage=false;
     private final String bridgeToken=token();
+    private final java.util.concurrent.ExecutorService exportExecutor=java.util.concurrent.Executors.newSingleThreadExecutor();
     private static String token(){byte[] data=new byte[32];new SecureRandom().nextBytes(data);return Base64.encodeToString(data,Base64.NO_WRAP);}
 
     @Override public void onCreate(Bundle state){
@@ -112,12 +113,12 @@ public final class MainActivity extends Activity {
         }
         @JavascriptInterface public void exportBackup(String token,String json,String name){
             if(!allowed(token)||json==null||json.length()>10*1024*1024)return;
-            try{JSONObject data=new JSONObject(json);if(!data.has("schedules")||!data.has("projects")||!data.has("growth"))return;}catch(Exception e){return;}
+            try{JSONObject data=new JSONObject(json);boolean snapshot="ketime-protection-snapshots".equals(data.optString("format"))&&data.optJSONArray("snapshots")!=null;if(!snapshot&&(data.optJSONArray("schedules")==null||data.optJSONArray("projects")==null))return;}catch(Exception e){return;}
             runOnUiThread(()->{
                 if(pendingExport!=null){notice("请先完成当前备份保存。");return;}
                 pendingExport=json.getBytes(StandardCharsets.UTF_8);
                 if(pendingExport.length>10*1024*1024){pendingExport=null;notice("备份超过10MB。");return;}
-                String filename=name!=null&&name.matches("ketime-backup-[0-9-]+\\.json")?name:"ketime-backup.json";
+                String filename=name!=null&&name.matches("ketime-backup-[0-9-]+(?:-snapshots)?\\.json")?name:"ketime-backup.json";
                 Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/json").putExtra(Intent.EXTRA_TITLE,filename);
                 try{startActivityForResult(intent,SAVE_BACKUP);}catch(ActivityNotFoundException e){pendingExport=null;notice("手机没有可用的文件保存器。");}
             });
@@ -127,7 +128,7 @@ public final class MainActivity extends Activity {
         super.onActivityResult(request,result,data);
         if(request==OPEN_BACKUP&&chooser!=null){chooser.onReceiveValue(result==RESULT_OK&&data!=null&&data.getData()!=null?new Uri[]{data.getData()}:null);chooser=null;}
         if(request==SAVE_BACKUP){byte[] bytes=pendingExport;pendingExport=null;if(result==RESULT_OK&&data!=null&&data.getData()!=null&&bytes!=null){
-            java.util.concurrent.Executors.newSingleThreadExecutor().execute(()->{try(OutputStream out=getContentResolver().openOutputStream(data.getData(),"wt")){if(out==null)throw new IllegalStateException();out.write(bytes);notice("备份已保存。");}catch(Exception e){notice("备份保存失败，原数据未更改。");}finally{java.util.Arrays.fill(bytes,(byte)0);}});
+            exportExecutor.execute(()->{try(OutputStream out=getContentResolver().openOutputStream(data.getData(),"wt")){if(out==null)throw new IllegalStateException();out.write(bytes);notice("备份已保存。");}catch(Exception e){notice("备份保存失败，原数据未更改。");}finally{java.util.Arrays.fill(bytes,(byte)0);}});
         }else if(bytes!=null)java.util.Arrays.fill(bytes,(byte)0);}
     }
     @Override public void onBackPressed(){
@@ -136,5 +137,5 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onResume(){super.onResume();if(web!=null){web.onResume();web.evaluateJavascript("window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));",null);}}
     @Override protected void onPause(){if(web!=null)web.onPause();super.onPause();}
-    @Override protected void onDestroy(){if(chooser!=null)chooser.onReceiveValue(null);if(web!=null){trustedPage=false;web.removeJavascriptInterface("KetimeNative");web.destroy();}super.onDestroy();}
+    @Override protected void onDestroy(){if(chooser!=null){chooser.onReceiveValue(null);chooser=null;}if(pendingExport!=null){java.util.Arrays.fill(pendingExport,(byte)0);pendingExport=null;}exportExecutor.shutdown();if(web!=null){trustedPage=false;web.removeJavascriptInterface("KetimeNative");web.destroy();}super.onDestroy();}
 }

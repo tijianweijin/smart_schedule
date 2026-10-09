@@ -20,9 +20,9 @@
     '<p id="chatgpt-status" class="bupt-status" role="status" aria-live="polite">尚未连接。</p>'+
     '<a id="chatgpt-auth-link" target="_blank" rel="noopener noreferrer" hidden>浏览器阻止了新窗口，请点击这里前往 OpenAI 登录</a>'+
     '<div class="chatgpt-model-picker" aria-label="模型与推理强度">'+
-    '<label><span class="form-label">提供方</span><select id="chatgpt-provider" class="form-select" aria-label="模型提供方" disabled><option value="GPT">GPT</option></select></label><span class="chatgpt-picker-arrow" aria-hidden="true">→</span>'+
-    '<label><span class="form-label">版本</span><select id="chatgpt-version" class="form-select" aria-label="GPT 版本" disabled><option value="">连接后读取</option></select></label><span class="chatgpt-picker-arrow" aria-hidden="true">→</span>'+
-    '<label><span class="form-label">模型 / 系列</span><select id="chatgpt-model" class="form-select" aria-label="GPT 模型与系列" disabled><option value="">连接后读取</option></select></label><span class="chatgpt-picker-arrow" aria-hidden="true">→</span>'+
+    '<label><span class="form-label">提供方</span><select id="chatgpt-provider" class="form-select" aria-label="模型提供方" disabled><option value="GPT">ChatGPT</option></select></label><span class="chatgpt-picker-arrow" aria-hidden="true">→</span>'+
+    '<label><span class="form-label">版本</span><select id="chatgpt-version" class="form-select" aria-label="ChatGPT 版本" disabled><option value="">连接后读取</option></select></label><span class="chatgpt-picker-arrow" aria-hidden="true">→</span>'+
+    '<label><span class="form-label">模型 / 系列</span><select id="chatgpt-model" class="form-select" aria-label="ChatGPT 模型与系列" disabled><option value="">连接后读取</option></select></label><span class="chatgpt-picker-arrow" aria-hidden="true">→</span>'+
     '<label><span class="form-label">推理强度</span><select id="chatgpt-effort" class="form-select" aria-label="推理强度" disabled><option value="">连接后读取</option></select></label></div>'+
     '<div class="chatgpt-model-actions"><button id="chatgpt-save-model" type="button" class="btn btn-primary" disabled>保存模型设置</button><button id="chatgpt-refresh" type="button" class="btn">更新模型</button></div>'+
     '<p id="chatgpt-model-status" class="chatgpt-model-settings-status" role="status" aria-live="polite">连接后读取当前账户可用模型与强度。</p>'+
@@ -38,7 +38,7 @@
   function selection(){return {model:$('model').value,reasoningEffort:$('effort').value};}
   function dirty(){var current=selection();return !saved||current.model!==saved.model||current.reasoningEffort!==saved.reasoningEffort;}
   function selectedRow(){return catalog.find(function(row){return row.id===$('model').value;});}
-  function describe(current){var row=catalog.find(function(item){return item.id===current.model;});return row?'GPT → '+row.version+' → '+row.series+' → '+labels[current.reasoningEffort]+'（'+row.id+'）':current.model;}
+  function describe(current){var row=catalog.find(function(item){return item.id===current.model;});return row?'ChatGPT → '+row.version+' → '+row.series+' → '+labels[current.reasoningEffort]+'（'+row.id+'）':current.model;}
   function modelStatus(){
     var text=!connected?'连接后读取当前账户可用模型与强度。':!catalog.length?'尚未读取可用模型。':saving||saveTimer?'正在自动应用：'+describe(selection())+'。':!selectionValid?'原设置已不可用，请重新选择并保存。当前候选：'+describe(selection())+'。':dirty()?'尚未保存：'+describe(selection())+'。请点击保存重试。':'已生效：'+describe(saved)+'。用于日程助手及测试。';
     $('model-status').textContent=text;$('model-status').classList.toggle('error',connected&&catalog.length&&!selectionValid);
@@ -56,7 +56,7 @@
   function models(version,id,effort){
     var select=$('model');select.replaceChildren();
     Array.from($('version').options).forEach(function(option){
-      var group=document.createElement('optgroup');group.label='GPT '+option.value;
+      var group=document.createElement('optgroup');group.label='ChatGPT '+option.value;
       catalog.filter(function(row){return row.version===option.value;}).forEach(function(row){var item=document.createElement('option');item.value=row.id;item.textContent=row.series+' · '+row.version+(catalog.filter(function(other){return other.version===row.version&&other.series===row.series;}).length>1?' · '+row.name:'');group.appendChild(item);});
       if(group.children.length)select.appendChild(group);
     });
@@ -72,7 +72,7 @@
   }
   async function loadModels(preserve){
     var previous=preserve?selection():null,data=await call('models');
-    if(!Array.isArray(data.models)||!data.models.length)throw Error('当前账户未返回可用 GPT 模型，请检查授权。');
+    if(!Array.isArray(data.models)||!data.models.length)throw Error('当前账户未返回可用 ChatGPT 模型，请检查授权。');
     if(!data.models.every(function(row){return typeof row.id==='string'&&/^gpt-\d/.test(row.id)&&typeof row.version==='string'&&typeof row.series==='string'&&Array.isArray(row.reasoningEfforts)&&row.reasoningEfforts.length&&row.reasoningEfforts.every(function(e){return Object.prototype.hasOwnProperty.call(labels,e);});}))throw Error('模型目录格式不完整，请更新本机服务。');
     catalog=data.models;saved={model:data.selectedModel||data.defaultModel,reasoningEffort:data.reasoningEffort};selectionValid=data.selectionValid!==false;
     var current=previous||saved,row=catalog.find(function(item){return item.id===current.model;});

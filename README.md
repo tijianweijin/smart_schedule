@@ -2,9 +2,13 @@
 
 面向项目的大学生日程软件，本地优先。包含日程表、项目单、成长曲线与待收纳。
 
-设置新增“智能模型选择 → 大模型选择”，支持原 GPT 授权和 DeepSeek API。DeepSeek 的密钥连接、模型更新/强度选择、消息测试及日程助手说明见 [DeepSeek接入说明.md](DeepSeek接入说明.md)。MiniMax/Kimi 目前为明确标注的待接入选项。
+设置中的“智能模型选择 → 大模型选择”支持 ChatGPT、DeepSeek、MiniMax、Kimi。ChatGPT 保留原授权方式；另外三家使用本人通用 API Key，支持加密保存、实时模型更新、按模型能力选择思考模式／强度、测试消息及日程助手，不会自动切换提供方。DeepSeek 说明见 [DeepSeek接入说明.md](DeepSeek接入说明.md)，Kimi／MiniMax 说明见 [Kimi-MiniMax接入说明.md](Kimi-MiniMax接入说明.md)。
 
 Android 1.0 工程、构建与迁移说明见 [android/README.md](android/README.md)。手机内嵌当前界面与全部本机 API，不依赖电脑运行服务。安装包输出到 `android/dist/刻时-Android-1.0.apk`。
+
+## 数据升级与备份
+
+保持原浏览器入口、地址端口和存储键，旧记录在更新后继续使用。新增统一数据格式与原始快照保护，兼容旧版备份；存储损坏、较新格式、写入失败及过期页面不会静默覆盖原记录。设置中的本地备份区可导出/恢复普通备份和单份保护快照。详见 [数据升级与兼容说明.md](数据升级与兼容说明.md)。Android 请覆盖安装，勿先卸载；换设备或入口前先导出再恢复。
 
 ## 使用
 
