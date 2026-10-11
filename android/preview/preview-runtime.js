@@ -23,7 +23,7 @@
  };
  document.addEventListener('DOMContentLoaded',function(){
   document.title='刻时 Android · 离线预览';
-  var note=document.querySelector('#settings-overlay .modal>.bupt-note');if(note)note.textContent='这是 Edge 离线布局预览。只保存独立的预览日程，不保存学校账号、密码或 ChatGPT 授权，也不使用 Android Keystore。';
+  var note=document.querySelector('#settings-account-section .bupt-note');if(note)note.textContent='这是 Edge 离线布局预览。只保存独立的预览日程，不保存学校账号、密码或 ChatGPT 授权，也不使用 Android Keystore。';
   var hint=document.getElementById('settings-local-hint');if(hint){hint.hidden=false;hint.textContent='课表、作业与 AI 联网请使用手机安装版或正式网页；本预览不发送任何账号请求。';}
   ['settings-account','settings-password','settings-cloud-password','settings-term-start','settings-save','settings-clear','bupt-sync-btn','ucloud-btn','chatgpt-connect','chatgpt-add-account','chatgpt-refresh'].forEach(function(id){var element=document.getElementById(id);if(element){element.disabled=true;element.title='离线预览不连接账号服务';}});
  });

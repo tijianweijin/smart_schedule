@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Message;
 import android.view.View;
+import android.view.HapticFeedbackConstants;
 import android.view.WindowInsets;
 import android.webkit.JavascriptInterface;
 import android.webkit.JsResult;
@@ -96,7 +97,12 @@ public final class MainActivity extends Activity {
                 ((WebView.WebViewTransport)message.obj).setWebView(popup);message.sendToTarget();return true;
             }
         });
-        web.loadUrl(url);
+        // Android applications share loopback. Issue a native-only HttpOnly
+        // cookie before the first request; JS and unauthenticated clients cannot
+        // obtain the service token from /api/config.
+        String session=((KetimeApplication)getApplication()).sessionToken;
+        if(session==null){notice("本机服务会话尚未就绪，请重新打开刻时。");return;}
+        android.webkit.CookieManager.getInstance().setCookie(ORIGIN,"ketime_session="+session+"; Path=/; HttpOnly; SameSite=Strict",accepted->{if(Boolean.TRUE.equals(accepted)&&!isFinishing()&&!isDestroyed())web.loadUrl(url);else notice("本机会话初始化失败，请重新打开刻时。");});
     }
     private static boolean isLocal(Uri uri){return "http".equals(uri.getScheme())&&"127.0.0.1".equals(uri.getHost())&&uri.getPort()==8766&&uri.getUserInfo()==null;}
     private void openExternal(Uri uri){
@@ -106,6 +112,10 @@ public final class MainActivity extends Activity {
     private void notice(String text){runOnUiThread(()->Toast.makeText(this,text,Toast.LENGTH_LONG).show());}
     public final class BackupBridge {
         private boolean allowed(String token){return trustedPage&&bridgeToken.equals(token);}
+        @JavascriptInterface public void haptic(String token){
+            if(!allowed(token))return;
+            runOnUiThread(()->{if(web!=null)web.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);});
+        }
         @JavascriptInterface public void openAuth(String token,String address){
             if(!allowed(token)||address==null||address.length()>16384)return;
             Uri uri=Uri.parse(address);if(!"https".equals(uri.getScheme())||!"auth.openai.com".equals(uri.getHost())||!"/api/accounts/authorize".equals(uri.getPath())||uri.getUserInfo()!=null)return;

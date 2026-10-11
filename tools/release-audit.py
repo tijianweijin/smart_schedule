@@ -95,8 +95,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("apk", type=Path, nargs="?", default=ROOT / "android/dist/刻时-Android-1.0.apk")
     parser.add_argument("--require-16kb", action="store_true")
+    parser.add_argument("--output", type=Path, help="Write a generated audit report (contains no matched secret values)")
     args = parser.parse_args()
     report = audit(args.apk)
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=True, indent=2))
     failed = bool(report["privateFiles"] or report["secretFindings"] or report["sourceMismatch"] or report["unknownElf"])
     if args.require_16kb:

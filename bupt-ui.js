@@ -20,7 +20,8 @@
     box.querySelector('.modal').insertBefore(privacy,$('settings-form'));
     function local(){return location.protocol==='http:'&&location.hostname==='127.0.0.1'}
     function status(text,error){$('settings-status').textContent=text;$('settings-status').classList.toggle('error',!!error)}
-    function notify(text,error){var el=$('sync-status');if(el){el.textContent=text;el.classList.toggle('error',!!error)}}
+    var notifyTimer=null;
+    function notify(text,error){clearTimeout(notifyTimer);var el=$('sync-status');if(el){el.textContent=text;el.classList.toggle('error',!!error);if(text)notifyTimer=setTimeout(function(){el.textContent='';el.classList.remove('error')},3000)}}
     async function call(path,payload,signal){if(!local())throw Error('请通过 start-ketime.cmd 打开的本机页面使用账号保存和同步。');var response=await fetch('/api/config',{cache:'no-store',signal:signal});if(!response.ok)throw Error('本机服务不可用，请重新启动。');var config=await response.json(),version=String(config.version||'').split('.').map(Number);if(!(version[0]>0||version[0]===0&&version[1]>=5))throw Error('当前仍在运行旧版刻时服务，请重启 start-ketime.cmd 并刷新页面；账号密码尚未发送。');var result=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Ketime-Token':config.csrfToken},body:JSON.stringify(payload||{}),cache:'no-store',signal:signal});var data=await result.json();if(!result.ok){var error=Error(data.error||'本机服务请求失败。');error.code=data.code;throw error}return data}
     function pagePresentation(){return window.KetimeAndroid&&window.KetimeAndroid.settingsPage}
     function close(){box.classList.remove('visible');$('settings-password').value='';$('settings-cloud-password').value='';var page=pagePresentation();if(page)page.hide();else if(previousFocus)previousFocus.focus()}

@@ -120,6 +120,16 @@ def validate_identity(encoded, client_id, nonce):
             raise ValueError
         keys = request(JWKS).get("keys", [])
         key = next(key for key in keys if key.get("kid") == header["kid"])
+        # Bind algorithms to their intended key types before constructing a key.
+        # ES256 is P-256 only; no SECT/other curves reach the native crypto parser.
+        if not isinstance(key, dict) or key.get("alg", header["alg"]) != header["alg"] or key.get("use", "sig") != "sig":
+            raise ValueError
+        if header["alg"] == "RS256" and key.get("kty") != "RSA":
+            raise ValueError
+        if header["alg"] == "ES256" and (key.get("kty") != "EC" or key.get("crv") != "P-256"):
+            raise ValueError
+        if "key_ops" in key and (not isinstance(key["key_ops"], list) or "verify" not in key["key_ops"]):
+            raise ValueError
         public_key = jwt.PyJWK.from_dict(key, algorithm=header["alg"]).key
         claims = jwt.decode(encoded, public_key, algorithms=[header["alg"]], audience=client_id, issuer=AUTH,
                             options={"require": ["exp", "iat", "iss", "aud", "sub", "nonce"]})

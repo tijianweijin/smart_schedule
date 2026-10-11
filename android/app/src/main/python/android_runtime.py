@@ -1,11 +1,34 @@
 """Android-only host; reuse every existing API without desktop credentials."""
 import base64
+import hmac
+from http.cookies import CookieError, SimpleCookie
 from pathlib import Path
+import secrets
 import threading
 from urllib.parse import urlsplit
 
 _lock = threading.Lock()
 _server = None
+
+
+def session_allowed(cookie, expected):
+    """Loopback is shared by Android apps; Origin/CSRF alone is not isolation."""
+    if not expected or not isinstance(cookie, str) or len(cookie) > 4096:
+        return False
+    try:
+        parsed = SimpleCookie()
+        parsed.load(cookie)
+        value = parsed.get('ketime_session')
+        return bool(value and hmac.compare_digest(value.value, expected))
+    except (CookieError, ValueError, TypeError):
+        return False
+
+
+def get_session_token():
+    # Called only by the native Application; never returned through HTTP/JS.
+    if _server is None:
+        raise RuntimeError('Local service is not ready')
+    return _server.session_token
 
 
 def android_response(status, body, content_type, request_path):
@@ -14,7 +37,7 @@ def android_response(status, body, content_type, request_path):
     if status == 200 and urlsplit(request_path).path == '/android-mobile.css':
         return body, 'text/css; charset=utf-8'
     if isinstance(body, dict) and 'csrfToken' in body:
-        return dict(body, version='1.0.21', platform='android', credentialStorage='Android Keystore'), content_type
+        return dict(body, version='1.0.29', platform='android', credentialStorage='Android Keystore'), content_type
     if status == 200 and content_type.startswith('text/html') and isinstance(body, bytes):
         page = body.decode('utf-8')
         page = page.replace('</head>', '<script>window.KetimeAndroid=true</script><link rel="stylesheet" href="/android-mobile.css"></head>', 1)
@@ -67,6 +90,20 @@ def start(private_root, web_root, crypto):
         ketime_server.STATIC_FILES |= {'android-mobile.js', 'android-mobile.css'}
 
         class AndroidHandler(ketime_server.Handler):
+            def do_GET(self):
+                # System-browser OAuth callbacks use the existing one-use state
+                # checks. Every other endpoint needs the native HttpOnly cookie.
+                if urlsplit(self.path).path != '/auth/callback' and not session_allowed(self.headers.get('Cookie', ''), self.server.session_token):
+                    self.send(403, {'error': '仅允许刻时应用内页面访问本机服务。'})
+                    return
+                super().do_GET()
+
+            def do_POST(self):
+                if not session_allowed(self.headers.get('Cookie', ''), self.server.session_token):
+                    self.send(403, {'error': '应用会话无效，请重新打开刻时。'})
+                    return
+                super().do_POST()
+
             def send(self, status, body, content_type='application/json; charset=utf-8'):
                 body, content_type = android_response(status, body, content_type, self.path)
                 super().send(status, body, content_type)
@@ -78,6 +115,7 @@ def start(private_root, web_root, crypto):
             # rejects a second live listener; SO_REUSEPORT is never enabled.
             allow_reuse_address = True
         _server = AndroidHTTPServer(('127.0.0.1', 8766), AndroidHandler)
+        _server.session_token = secrets.token_urlsafe(32)
         thread = threading.Thread(target=_server.serve_forever, name='ketime-local-api', daemon=True)
         thread.start()
         return 'http://127.0.0.1:8766/'

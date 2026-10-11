@@ -7,6 +7,8 @@ import secrets
 import tempfile
 import unittest
 from unittest.mock import patch
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 import local_settings
 import chatgpt_client
 import deepseek_client
@@ -108,5 +110,54 @@ class AndroidRuntimeTest(unittest.TestCase):
         self.assertIn(b'android-mobile.js',body)
         body,mime=runtime.android_response(404,{'error':'missing'},'application/json','/android-mobile.css')
         self.assertEqual(mime,'application/json')
+
+    def test_android_loopback_requires_native_session(self):
+        secret='test-native-session-only'
+        self.assertTrue(runtime.session_allowed('ketime_session='+secret,secret))
+        self.assertTrue(runtime.session_allowed('other=ok; ketime_session='+secret,secret))
+        for cookie in ('','ketime_session=wrong','other='+secret,'ketime_session=你好','x'*4097):
+            self.assertFalse(runtime.session_allowed(cookie,secret))
+        self.assertFalse(runtime.session_allowed('ketime_session=', ''))
+        java=(ROOT/'android/app/src/main/java/cn/ketime/app/MainActivity.java').read_text(encoding='utf-8')
+        self.assertIn('HttpOnly; SameSite=Strict',java)
+        self.assertNotIn('evaluateJavascript("ketime_session',java)
+
+    def test_android_http_session_enforced_without_real_credentials(self):
+        import ketime_server
+        from http.server import ThreadingHTTPServer
+        base=ketime_server.LocalHTTPServer
+        class EphemeralServer(base):
+            # Android's SO_REUSEADDR and Windows' exclusive bind are mutually
+            # exclusive. Exercise the Linux-style host on a generic test socket.
+            server_bind=ThreadingHTTPServer.server_bind
+            def __init__(self,address,handler):
+                super().__init__(('127.0.0.1',0),handler)
+        with patch.object(ketime_server,'LocalHTTPServer',EphemeralServer), patch.object(ketime_server,'ROOT',ketime_server.ROOT), patch.object(runtime,'_server',None):
+            runtime.start(self.temp.name,self.temp.name,FakeCrypto())
+            server=runtime._server
+            self.addCleanup(server.server_close)
+            self.addCleanup(server.shutdown)
+            url='http://127.0.0.1:'+str(server.server_port)
+            for path in ('/','/api/config','/android-mobile.css'):
+                with self.assertRaises(HTTPError) as denied:
+                    urlopen(url+path,timeout=5)
+                self.assertEqual(denied.exception.code,403)
+            cookie='ketime_session='+runtime.get_session_token()
+            with urlopen(Request(url+'/api/config',headers={'Cookie':cookie}),timeout=5) as response:
+                config=json.load(response)
+            self.assertEqual(config['platform'],'android')
+            self.assertNotIn(runtime.get_session_token(),json.dumps(config))
+            body=json.dumps({}).encode()
+            headers={'Content-Type':'application/json','X-Ketime-Token':ketime_server.BOOT_TOKEN}
+            with self.assertRaises(HTTPError) as denied:
+                urlopen(Request(url+'/api/settings/read',body,headers),timeout=5)
+            self.assertEqual(denied.exception.code,403)
+            headers['Cookie']=cookie
+            with urlopen(Request(url+'/api/settings/read',body,headers),timeout=5) as response:
+                self.assertEqual(json.load(response)['account'],'')
+            with patch.object(ketime_server.CHATGPT,'callback',side_effect=SyncError('fixture callback rejected','FIXTURE')):
+                with self.assertRaises(HTTPError) as callback:
+                    urlopen(url+'/auth/callback?state=synthetic',timeout=5)
+                self.assertEqual(callback.exception.code,400)
 
 if __name__=='__main__':unittest.main()

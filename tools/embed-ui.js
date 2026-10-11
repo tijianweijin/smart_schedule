@@ -2,7 +2,7 @@
 const fs = require('node:fs'), path = require('node:path');
 const root = path.resolve(__dirname, '..');
 let html = fs.readFileSync(path.join(root, 'ketime _demo_0.1.html'), 'utf8').replace(/\r/g, '');
-for (const file of ['state-storage.js', 'bupt-import.js', 'bupt-ui.js', 'school-tools.js', 'school-ui.js', 'schedule-overlap.js', 'daily-reminders.js', 'chatgpt-ui.js', 'schedule-assistant.js', 'ai-providers.js']) {
+for (const file of ['state-storage.js', 'bupt-import.js', 'bupt-ui.js', 'school-tools.js', 'school-ui.js', 'schedule-overlap.js', 'daily-reminders.js', 'chatgpt-ui.js', 'schedule-assistant.js', 'ai-providers.js', 'timeline-ui.js']) {
   const marker = '<script data-ketime-module="' + file + '">\n';
   const source = fs.readFileSync(path.join(root, file), 'utf8').replace(/\r/g, '').trimEnd();
   if (source.includes('</script>')) throw Error('Unsafe embedded source: ' + file);
@@ -13,7 +13,7 @@ for (const file of ['state-storage.js', 'bupt-import.js', 'bupt-ui.js', 'school-
     html = html.slice(0, start) + script + html.slice(end + '\n</script>'.length);
   } else {
     if(file==='state-storage.js'){html=html.replace('<script data-ketime-module="bupt-import.js">',script+'\n<script data-ketime-module="bupt-import.js">');continue}
-    if (!['chatgpt-ui.js', 'schedule-assistant.js', 'ai-providers.js'].includes(file) || !html.includes('</body>')) throw Error('Missing module: ' + file);
+    if (!['chatgpt-ui.js', 'schedule-assistant.js', 'ai-providers.js', 'timeline-ui.js'].includes(file) || !html.includes('</body>')) throw Error('Missing module: ' + file);
     // ChatGPT mounts after the main application creates the settings modal.
     html = html.replace('</body>', script + '\n</body>');
   }

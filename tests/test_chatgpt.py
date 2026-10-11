@@ -108,6 +108,22 @@ class IdentityTests(unittest.TestCase):
     def test_valid_signature_and_claims(self):
         self.assertEqual(api.validate_identity(self.encode(), "oaiapp_fixture", "fixture-nonce")["sub"], "fixture-subject")
 
+    def test_wrong_key_type_curve_purpose_and_algorithm_rejected_before_parser(self):
+        cases = [
+            ("ES256", {"kty": "EC", "crv": "sect233k1"}),
+            ("ES256", {"kty": "EC", "crv": "P-384"}),
+            ("ES256", {"kty": "RSA"}),
+            ("RS256", {"kty": "EC", "crv": "P-256"}),
+            ("RS256", {"kty": "RSA", "use": "enc"}),
+            ("RS256", {"kty": "RSA", "alg": "RS512"}),
+            ("RS256", {"kty": "RSA", "key_ops": ["encrypt"]}),
+        ]
+        for algorithm, fields in cases:
+            with self.subTest(fields=fields), patch.object(jwt, "get_unverified_header", return_value={"alg": algorithm, "kid": "bad"}), patch.object(api, "request", return_value={"keys": [{"kid": "bad", **fields}]}), patch.object(jwt.PyJWK, "from_dict") as parser:
+                with self.assertRaises(SyncError):
+                    api.validate_identity("synthetic", "oaiapp_fixture", "fixture-nonce")
+                parser.assert_not_called()
+
     def test_bad_signature_issuer_audience_expiry_nonce_rejected(self):
         bad = [self.encode({"iss": "https://invalid.example"}), self.encode({"aud": "other"}), self.encode({"exp": 1}), self.encode({"nonce": "other"}), self.encode(key=rsa.generate_private_key(public_exponent=65537, key_size=2048))]
         for value in bad:

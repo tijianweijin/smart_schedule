@@ -11,12 +11,18 @@ if(!$env:KETIME_BUILD_PYTHON){$env:KETIME_BUILD_PYTHON=(Get-Command python -Erro
 if($LASTEXITCODE -ne 0){throw 'Run tools/bootstrap.ps1 first.'}
 $gradle=Join-Path $toolRoot 'gradle-8.11.1\bin\gradle.bat'
 $tasks=@('assembleDebug','assembleDebugAndroidTest')
-if($Release){$tasks=@('assembleRelease')}
+if($Release){$tasks=@('lintRelease','assembleRelease')}
 if($Test){$tasks+=@('connectedDebugAndroidTest')}
 $cacheName=if($Release){'project-cache-release'}else{'project-cache-debug'}
 & $gradle -p (Join-Path $projectRoot 'android') --project-cache-dir (Join-Path $toolRoot $cacheName) --no-daemon @tasks
 if($LASTEXITCODE -ne 0){throw 'Android build failed.'}
-if($Release){& $env:KETIME_BUILD_PYTHON (Join-Path $PSScriptRoot 'sign-release.py');if($LASTEXITCODE -ne 0){throw 'Release signing failed.'}}
+if($Release){
+    & $env:KETIME_BUILD_PYTHON (Join-Path $PSScriptRoot 'sign-release.py');if($LASTEXITCODE -ne 0){throw 'Release signing failed.'}
+    & $env:KETIME_BUILD_PYTHON (Join-Path $projectRoot 'tools\release-audit.py') --require-16kb --output (Join-Path $projectRoot '.local\release-audit\final-release-audit.json')
+    if($LASTEXITCODE -ne 0){throw 'Release package audit failed; do not distribute the artifact.'}
+    & (Join-Path $env:ANDROID_HOME 'build-tools\35.0.0\zipalign.exe') -c -P 16 4 (Join-Path $projectRoot 'android\dist\刻时-Android-1.0.apk')
+    if($LASTEXITCODE -ne 0){throw 'Release ZIP alignment failed; do not distribute the artifact.'}
+}
 if(!$Release){
     $artifact=Join-Path $projectRoot 'android\app\build\outputs\apk\debug\app-debug.apk'
     $dist=Join-Path $projectRoot 'android\dist'

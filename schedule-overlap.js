@@ -36,10 +36,10 @@
     result.forEach(function(item){item.ranges=mergeRanges(item.ranges)});
     return result;
   }
-  function background(ranges,visualStart,visualDuration){
+  function background(ranges,visualStart,visualDuration,ink){
     if(!ranges.length||visualDuration<=0)return'';
-    var stops=['transparent 0%'];
-    ranges.forEach(function(range){var from=Math.max(0,Math.min(100,(range.start-visualStart)/visualDuration*100)),to=Math.max(0,Math.min(100,(range.end-visualStart)/visualDuration*100));if(to<=from)return;stops.push('transparent '+from+'%','#ef6b64 '+from+'%','#ef6b64 '+to+'%','transparent '+to+'%')});
+    var stops=['transparent 0%'],red=ink==='#ffffff'?'#a83232':'#ef6b64';
+    ranges.forEach(function(range){var from=Math.max(0,Math.min(100,(range.start-visualStart)/visualDuration*100)),to=Math.max(0,Math.min(100,(range.end-visualStart)/visualDuration*100));if(to<=from)return;stops.push('transparent '+from+'%',red+' '+from+'%',red+' '+to+'%','transparent '+to+'%')});
     stops.push('transparent 100%');return'linear-gradient(to bottom, '+stops.join(', ')+')';
   }
   return{segmentRange:segmentRange,plan:plan,background:background};

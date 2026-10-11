@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 
 public final class KetimeApplication extends Application {
     public final CompletableFuture<String> ready = new CompletableFuture<>();
+    volatile String sessionToken;
     @Override public void onCreate() {
         super.onCreate();
         Executors.newSingleThreadExecutor().execute(() -> {
@@ -25,6 +26,7 @@ public final class KetimeApplication extends Application {
                 }
                 if (!Python.isStarted()) Python.start(new AndroidPlatform(this));
                 String url = Python.getInstance().getModule("android_runtime").callAttr("start", new File(getFilesDir(), "vault").getAbsolutePath(), web.getAbsolutePath(), new AndroidVault()).toString();
+                sessionToken=Python.getInstance().getModule("android_runtime").callAttr("get_session_token").toString();
                 ready.complete(url);
             } catch (Exception error) { if(BuildConfig.DEBUG)android.util.Log.e("KetimeStartup","Local initialization failed",error);ready.completeExceptionally(error); }
         });

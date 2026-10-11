@@ -2,7 +2,7 @@
 (function(root,factory){var api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.KetimeBupt=api})(typeof window==='object'?window:globalThis,function(){
   'use strict';
   var fields=['name','date','start','end'];
-  var colors=['#8fbaa5','#b0a6d2','#e0b78f','#9bbbd4','#d7a5ae','#b9c69b'];
+  var colors=['#236C62','#9A4660','#6554AA','#9D5D23','#A5493E','#2E66A3','#38744D'];
   function clone(x){return JSON.parse(JSON.stringify(x))}
   function validDate(s){if(typeof s!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;var d=new Date(s+'T12:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===s}
   function snapshot(e){var out={};fields.forEach(function(k){out[k]=e[k]});return out}

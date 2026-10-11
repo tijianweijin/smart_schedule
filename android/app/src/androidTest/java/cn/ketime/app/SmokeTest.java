@@ -34,6 +34,7 @@ public class SmokeTest {
         long deadline=System.currentTimeMillis()+30000;String ready="null";
         while(System.currentTimeMillis()<deadline){ready=js(activity,"!!(window.__ketimeDemo&&window.KetimeAndroid&&window.KetimeAndroid.back&&window.__ketimeAndroidToken)");if("true".equals(ready))break;Thread.sleep(100);}
         assertEquals("true",ready);
+        assertEquals("true",js(activity,"!document.cookie.includes('ketime_session')"));
         assertEquals("true",js(activity,"document.querySelectorAll('.view-tab').length===4&&document.getElementById('view-schedule').classList.contains('active')"));
         assertEquals("true",js(activity,"(()=>{const nav=document.querySelector('body>.android-bottom-nav'),rect=nav.getBoundingClientRect(),button=document.getElementById('add-event-btn'),add=button.getBoundingClientRect();return !document.querySelector('.app-nav .view-tabs')&&Math.abs(rect.bottom-innerHeight)<1&&Math.abs(add.left+add.width/2-innerWidth/2)<1&&add.width===48&&Math.abs(add.height-rect.height+1)<1&&getComputedStyle(button).borderRadius==='0px'&&nav.querySelectorAll('.view-tab').length===4})()"));
         assertEquals("true",js(activity,"document.getElementById('settings-btn').click();document.getElementById('view-settings').classList.contains('active')&&!document.getElementById('settings-overlay').classList.contains('overlay')&&window.KetimeAndroid.back()"));
@@ -54,14 +55,16 @@ public class SmokeTest {
         String url=((KetimeApplication)context.getApplicationContext()).ready.get(90,java.util.concurrent.TimeUnit.SECONDS);
         assertEquals("http://127.0.0.1:8766/",url);
         HttpURLConnection config=(HttpURLConnection)new URL(url+"api/config").openConnection();
+        config.setRequestProperty("Cookie","ketime_session="+((KetimeApplication)context.getApplicationContext()).sessionToken);
         config.setConnectTimeout(10000);config.setReadTimeout(10000);assertEquals(200,config.getResponseCode());
         java.io.ByteArrayOutputStream output=new java.io.ByteArrayOutputStream();byte[] buffer=new byte[4096];int length;try(java.io.InputStream in=config.getInputStream()){while((length=in.read(buffer))!=-1)output.write(buffer,0,length);}
         JSONObject data=new JSONObject(new String(output.toByteArray(),StandardCharsets.UTF_8));assertEquals("android",data.getString("platform"));assertTrue(data.getBoolean("modelSettings"));assertTrue(data.getBoolean("scheduleAssistant"));
-        HttpURLConnection stylesheet=(HttpURLConnection)new URL(url+"android-mobile.css").openConnection();assertEquals(200,stylesheet.getResponseCode());assertTrue(stylesheet.getContentType().startsWith("text/css"));stylesheet.disconnect();
+        HttpURLConnection stylesheet=(HttpURLConnection)new URL(url+"android-mobile.css").openConnection();stylesheet.setRequestProperty("Cookie","ketime_session="+((KetimeApplication)context.getApplicationContext()).sessionToken);assertEquals(200,stylesheet.getResponseCode());assertTrue(stylesheet.getContentType().startsWith("text/css"));stylesheet.disconnect();
         AndroidVault vault=new AndroidVault();String text=android.util.Base64.encodeToString("synthetic-test-only".getBytes(StandardCharsets.UTF_8),android.util.Base64.NO_WRAP);
         String a=vault.encryptBase64(text),b=vault.encryptBase64(text);assertNotEquals(a,b);assertEquals(text,vault.decryptBase64(a));
         byte[] damaged=android.util.Base64.decode(a,android.util.Base64.NO_WRAP);damaged[damaged.length-1]^=1;
         try{vault.decryptBase64(android.util.Base64.encodeToString(damaged,android.util.Base64.NO_WRAP));fail("Tampering must fail");}catch(javax.crypto.AEADBadTagException expected){}
-        HttpURLConnection forbidden=(HttpURLConnection)new URL(url+"vault/chatgpt.aes").openConnection();assertEquals(404,forbidden.getResponseCode());
+        HttpURLConnection forbidden=(HttpURLConnection)new URL(url+"vault/chatgpt.aes").openConnection();forbidden.setRequestProperty("Cookie","ketime_session="+((KetimeApplication)context.getApplicationContext()).sessionToken);assertEquals(404,forbidden.getResponseCode());
+        HttpURLConnection unauthenticated=(HttpURLConnection)new URL(url+"api/config").openConnection();assertEquals(403,unauthenticated.getResponseCode());unauthenticated.disconnect();
     }
 }
