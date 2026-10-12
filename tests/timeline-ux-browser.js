@@ -22,8 +22,8 @@ const before=process.argv.includes('--capture-before');
   assert.equal(await ui.locator('.untimed-panel').evaluate(e=>e.getBoundingClientRect().height),56);
   assert(await ui.locator('.untimed-scroll').isHidden());await ui.click('#inbox-toggle');assert(await ui.locator('.untimed-scroll').isVisible());
   await ui.click('[data-view=projects]');await ui.click('[data-view=schedule]');assert(await ui.locator('.untimed-scroll').isVisible());await ui.click('#inbox-toggle');
-  for(const id of ['short','long','overlap']){const block=ui.locator('[data-event-id="'+id+'"]');assert(await block.locator('.event-time').isHidden());assert(await block.locator('.event-link').isHidden());assert.equal(await block.locator('.event-title').evaluate(e=>getComputedStyle(e).fontSize),'16px');}
-  assert(await ui.locator('[data-event-id=short] .event-location').isHidden());assert(await ui.locator('[data-event-id=long] .event-location').isVisible());
+  for(const id of ['short','long','overlap']){const block=ui.locator('[data-event-id="'+id+'"]');assert(await block.locator('.event-time').isVisible());assert(await block.locator('.event-link').isHidden());if(id!=='short')assert.equal(await block.locator('.event-title').evaluate(e=>getComputedStyle(e).fontSize),'16px');}
+  assert(await ui.locator('[data-event-id=short] .event-location').isHidden());assert(await ui.locator('[data-event-id=long] .event-time').isVisible());
   await ui.click('#add-event-btn');assert(await ui.locator('#chips-editor .chip-text').first().evaluate(e=>e===document.activeElement));assert.equal(await ui.locator('#save-event').textContent(),'创建日程');assert.equal(await ui.locator('#chips-editor').evaluate(e=>e.getBoundingClientRect().height),56);
   assert.equal(await ui.locator('.color-preset').count(),7);await ui.locator('#chips-editor .chip-text').first().fill('完整表单日程');await ui.fill('#event-start','07:15');await ui.fill('#event-end','07:45');await ui.press('#chips-editor .chip-text','Enter');assert(await ui.locator('#schedule-overlay').isHidden());
   const created=(await ui.evaluate(()=>window.__ketimeDemo.getState())).schedules.find(e=>e.name==='完整表单日程');assert(created);assert.equal(created.start,'07:15');assert.equal(created.end,'07:45');
@@ -42,7 +42,9 @@ const before=process.argv.includes('--capture-before');
   // Upward selection, cancellation, threshold movement and Escape have no side effects.
   await ui.evaluate(()=>document.getElementById('schedule-wrap').scrollTop=5*96);first=await coords(480);last=await coords(435);
   await mouseAt(first);await page.mouse.down();await page.clock.runFor(360);await mouseAt(last);await page.mouse.up();assert.match(await ui.locator('#timeline-quick-range').textContent(),/13:15.*14:00/);await ui.click('#timeline-quick-cancel');assert.equal((await ui.evaluate(()=>window.__ketimeDemo.getState())).schedules.length,count+1);assert.equal(await ui.locator('.timeline-range-preview').count(),0);
-  first=await coords(500);await mouseAt(first);await page.mouse.down();await page.clock.runFor(100);await mouseAt({...first,y:first.y+24});await page.clock.runFor(300);await page.mouse.up();assert(await ui.locator('#timeline-quick-create').isHidden());
+  first=await coords(500);await mouseAt(first);await page.mouse.down();await page.clock.runFor(100);await mouseAt({...first,y:first.y+24});await page.clock.runFor(300);await page.mouse.up();assert(await ui.locator('#timeline-quick-create').isHidden());assert(await ui.locator('#schedule-overlay').isHidden());
+  // Simulated keyboard viewport: not a claim about a physical phone's IME.
+  await ui.click('#add-event-btn');await ui.evaluate(()=>{Object.defineProperty(window.visualViewport,'height',{configurable:true,value:360});window.visualViewport.dispatchEvent(new Event('resize'))});await page.clock.runFor(32);assert(await ui.locator('#save-event').evaluate(e=>e.getBoundingClientRect().bottom<=360));await ui.click('#cancel-event');await ui.evaluate(()=>{delete window.visualViewport.height;window.visualViewport.dispatchEvent(new Event('resize'))});
   assert.deepEqual(errors,[]);await context.close();
  }
  console.log(before?'Saved isolated before screenshots.':'Timeline UX checks passed: responsive visual hierarchy, compact session inbox, full form focus/keyboard, stable colors, mouse long-press/downward/upward selection, cancellation and accidental movement.');

@@ -16,26 +16,23 @@ function event(id,start,end,extra={}){return{id,name:id==='start'?'开放自习'
   for(const [id,direction] of [['start','bottom'],['end','top']]){
    const marker=block(id);assert(await marker.evaluate(e=>e.classList.contains('event-marker')));assert.equal(await marker.locator('.event-title').textContent(),id==='start'?'开放自习':'提交报告');assert.match(await marker.locator('.event-location').textContent(),/图书馆/);
    const shape=await marker.evaluate(e=>{const fade=e.querySelector('.marker-fade'),s=getComputedStyle(fade),title=e.querySelector('.event-title').getBoundingClientRect(),r=e.getBoundingClientRect();return{height:r.height,mask:fade.style.maskImage,size:s.maskSize,titleTop:title.top,titleBottom:title.bottom,top:r.top,bottom:r.bottom};});
-   assert(Math.abs(shape.height-48)<1&&(direction==='bottom'?!shape.mask.includes('to top'):shape.mask.includes('to top'))&&shape.size==='100% 48px'&&(direction==='bottom'?shape.titleTop>=shape.top+2:shape.titleBottom<=shape.bottom-2),JSON.stringify({mobile,id,...shape}));
+   assert(shape.height>0&&(direction==='bottom'?!shape.mask.includes('to top'):shape.mask.includes('to top'))&&Math.abs(parseFloat(shape.size.split(' ')[1])-shape.height)<1&&(direction==='bottom'?shape.titleTop>=shape.top+2:shape.titleBottom<=shape.bottom-2),JSON.stringify({mobile,id,...shape}));
    assert((await marker.locator('.marker-fade').getAttribute('style')).includes('239, 107, 100'));
    assert.match(await marker.getAttribute('aria-label'),/有时间重叠/);
   }
-  assert.deepEqual(JSON.parse(await block('start').getAttribute('data-conflicts')),[{start:195,end:210}]);
-  assert.deepEqual(JSON.parse(await block('end').getAttribute('data-conflicts')),[{start:195,end:225}]);
-  assert.equal(await ui.locator('.has-conflict').count(),3);
+  for(const id of ['start','end'])assert(await block(id).evaluate(e=>JSON.parse(e.dataset.conflicts).every(r=>r.start>=parseFloat(e.style.top)/96*60-.01&&r.end<=(parseFloat(e.style.top)+parseFloat(e.style.height))/96*60+.01)),'Conflict ranges follow measured card bounds');
+  assert((await ui.locator('.has-conflict').count())>=3);
   for(const id of ['start','isolated-start','end','isolated-end','normal','repeat']){
    const item=block(id).first();
-   const placement=await item.evaluate(e=>{const check=e.querySelector('.event-check').getBoundingClientRect(),title=e.querySelector('.event-title').getBoundingClientRect(),r=e.getBoundingClientRect();return{checkTop:check.top,checkBottom:check.bottom,checkRight:check.right,right:r.right,titleBottom:title.bottom,bottom:r.bottom,checkHeight:check.height};});
-   assert(Math.abs(placement.right-placement.checkRight-(id==='start'||id==='isolated-start'?8:['normal','repeat'].includes(id)?5.5:4))<1,JSON.stringify({id,mobile,...placement}));
-   if(id==='start'||id==='isolated-start')assert(placement.checkTop>=placement.titleBottom+2,JSON.stringify({id,mobile,...placement}));
-   else assert(Math.abs(placement.bottom-placement.checkBottom-(['normal','repeat'].includes(id)?2.5:4))<1,JSON.stringify({id,mobile,...placement}));
+   const placement=await item.evaluate(e=>{const check=e.querySelector('.event-check').getBoundingClientRect(),fields=[...e.querySelectorAll('.event-title,.event-time,.event-location')].filter(e=>getComputedStyle(e).display!=='none'),last=fields.at(-1).getBoundingClientRect(),content=e.querySelector('.event-content,.marker-content').getBoundingClientRect();return{gap:check.top-last.bottom,right:content.right-check.right,position:getComputedStyle(e.querySelector('.event-check')).position};});
+   assert.equal(placement.position,'static');assert(Math.abs(placement.gap-4)<1&&Math.abs(placement.right)<1,JSON.stringify({id,mobile,...placement}));
   }
   assert.match(await block('start').getAttribute('aria-label'),/无尾日程/);assert.match(await block('end').getAttribute('aria-label'),/无头日程/);
   if(mobile){
    for(const size of ['360,800','430,932','393,851']){
     await page.selectOption('#preview-size',size);await ui.waitForFunction(w=>innerWidth===w,Number(size.split(',')[0]));
     await ui.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-    for(const id of ['start','isolated-start','end','isolated-end','normal'])assert(await block(id).evaluate(e=>{const check=e.querySelector('.event-check').getBoundingClientRect(),title=e.querySelector('.event-title').getBoundingClientRect(),r=e.getBoundingClientRect(),start=e.classList.contains('marker-start-only'),marker=e.classList.contains('event-marker');return r.right-check.right>=3&&r.right-check.right<=10&&(start?check.top>=title.bottom+2:Math.abs(r.bottom-check.bottom-(marker?4:2.5))<1);}),id+' must stay lower-right after resizing');
+    for(const id of ['start','isolated-start','end','isolated-end','normal'])assert(await block(id).evaluate(e=>{const check=e.querySelector('.event-check').getBoundingClientRect(),fields=[...e.querySelectorAll('.event-title,.event-time,.event-location')].filter(e=>getComputedStyle(e).display!=='none'),last=fields.at(-1).getBoundingClientRect();return Math.abs(check.top-last.bottom-4)<1&&getComputedStyle(e.querySelector('.event-check')).position==='static';}),id+' must follow the last text after resizing');
    }
   }
   await ui.evaluate(()=>document.getElementById('schedule-wrap').scrollTop=2*96);await page.screenshot({path:path.join(root,'.local/schedule-markers'+(mobile?'-android':'-desktop')+'.png')});
@@ -49,7 +46,7 @@ function event(id,start,end,extra={}){return{id,name:id==='start'?'开放自习'
   let state=await ui.evaluate(()=>window.__ketimeDemo.getState());const linked=state.schedules.at(-1);assert.equal(linked.start,'');assert(state.projects[0].nodes[0].checklist.some(t=>t.scheduleId===linked.id));
   await ui.click('[data-view=projects]');await ui.locator('[data-action=edit-task]').first().click();assert.equal(await ui.locator('#task-start').inputValue(),'');await ui.fill('#task-start','12:00');await ui.click('[data-clear-time=task-end]');await ui.click('#save-task');state=await ui.evaluate(()=>window.__ketimeDemo.getState());assert.equal(state.schedules.find(e=>e.id===linked.id).end,'');
   await show([event('boundary-start','05:50',''),event('boundary-end','','06:10'),event('boundary-exact','','06:00')]);
-  for(const id of ['boundary-start','boundary-end']){assert.equal(await block(id).count(),2);assert.equal(await ui.locator('.event-block[data-event-id="'+id+'"].marker-has-line').count(),1);const height=await block(id).evaluateAll(es=>es.reduce((sum,e)=>sum+e.getBoundingClientRect().height,0));assert(Math.abs(height-48)<1);}
+  for(const id of ['boundary-start','boundary-end']){assert.equal(await block(id).count(),2);assert.equal(await ui.locator('.event-block[data-event-id="'+id+'"].marker-has-line').count(),1);assert(await block(id).evaluateAll(es=>Math.abs(es.reduce((sum,e)=>sum+e.getBoundingClientRect().height,0)-Number(es[0].dataset.markerFullHeight))<1));}
   assert.equal(await ui.locator('.event-block[data-event-id=boundary-exact].marker-has-line').count(),1);
   assert.equal(await block('boundary-exact').evaluate(e=>e.parentElement.dataset.date),'2026-10-07');
   await ui.evaluate(()=>document.getElementById('schedule-wrap').scrollTop=0);
@@ -61,5 +58,5 @@ function event(id,start,end,extra={}){return{id,name:id==='start'?'开放自习'
   await ui.evaluate(e=>window.KetimeScheduleAPI.create([e]),raw);assert.equal((await ui.evaluate(()=>window.__ketimeDemo.getState())).schedules.at(-1).start,'');
   assert.deepEqual(errors,[]);await context.close();
  }
- console.log('Marker browser checks passed: desktop/phone, both fade directions, exact 30-minute geometry and red overlap, clear-time creation/editing, completion, repeat blank overrides, persistence, project sync, day-boundary splitting and assistant creation.');
+ console.log('Marker browser checks passed: desktop/phone, measured height/fade/conflicts, trailing normal-flow completion, clear-time creation/editing, repeat blank overrides, persistence, project sync, day-boundary splitting and assistant creation.');
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{if(browser)await browser.close();});

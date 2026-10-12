@@ -3,12 +3,11 @@
   function minutes(time){var parts=time.split(':').map(Number);return parts[0]*60+parts[1]}
   // Use real time, not the minimum visual height of very short event blocks.
   function segmentRange(occ,dayStartHour){
-    // One-sided events explicitly use their 30-minute visual band for conflicts.
+    // Unknown-duration events use measured visual ranges, never a made-up hour.
     if(!occ.start||!occ.end){
       if(Number.isFinite(occ.visualStartMinutes)&&Number.isFinite(occ.visualEndMinutes))return{start:occ.visualStartMinutes,end:occ.visualEndMinutes};
-      var point=(minutes(occ.start||occ.end)-dayStartHour*60+1440)%1440;
-      if(occ.segment==='continuation')return occ.start?{start:0,end:Math.max(0,point+30-1440)}:{start:Math.max(0,point-30+1440),end:1440};
-      return{start:Math.max(0,point-(occ.start?0:30)),end:Math.min(1440,point+(occ.start?30:0))};
+      var point=occ.start||occ.end?(minutes(occ.start||occ.end)-dayStartHour*60+1440)%1440:0;
+      return{start:point,end:point};
     }
     var start=(minutes(occ.start)-dayStartHour*60+1440)%1440,duration=minutes(occ.end)-minutes(occ.start);
     if(duration<=0)duration+=1440;

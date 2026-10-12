@@ -1,5 +1,6 @@
 """Generate a persistent project signing identity. Never print private passwords."""
 import os
+import argparse
 from pathlib import Path
 import secrets
 import subprocess
@@ -11,6 +12,11 @@ sys.path.insert(0,str(ROOT))
 from local_settings import crypt
 
 def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--output-name',default='刻时-Android-1.0.apk')
+    args=parser.parse_args()
+    if Path(args.output_name).name!=args.output_name or '/' in args.output_name or '\\' in args.output_name or not args.output_name.endswith('.apk'):
+        parser.error('Output must be a simple APK filename within android/dist.')
     tools=ROOT/'.local/android-tools'
     signing=ROOT/'.local/android-signing'
     signing.mkdir(parents=True,exist_ok=True)
@@ -25,7 +31,7 @@ def main():
     if not key.exists():
         subprocess.run([str(tools/'jdk/bin/keytool.exe'),'-genkeypair','-keystore',str(key),'-storetype','PKCS12','-storepass:env','KETIME_SIGN_PASSWORD','-keypass:env','KETIME_SIGN_PASSWORD','-alias','ketime','-keyalg','RSA','-keysize','3072','-validity','10000','-dname','CN=Ketime Android, OU=Local App, O=Ketime, C=CN'],env=env,check=True)
     source=ROOT/'android/app/build/outputs/apk/release/app-release-unsigned.apk'
-    destination=ROOT/'android/dist/刻时-Android-1.0.apk'
+    destination=ROOT/'android/dist'/args.output_name
     destination.parent.mkdir(parents=True,exist_ok=True)
     # Sign a new file first: scanners/cloud-sync may memory-map the previous APK,
     # preventing truncation. Never damage a working package on signing failure.

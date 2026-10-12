@@ -26,7 +26,7 @@ const root=path.resolve(__dirname,'..');let browser;
     const wrap=document.getElementById('schedule-wrap'),col=document.querySelector(`.day-col-overlay[data-date="${date}"]`),head=col&&[...document.querySelectorAll('.day-header-cell')].find(h=>h.style.gridColumn===col.style.gridColumn);
     if(!head)return false;
     const r=wrap.getBoundingClientRect(),d=head.getBoundingClientRect(),now=new Date(),hour=document.querySelector('.day-click-cell').getBoundingClientRect().height,start=Number(document.getElementById('daystart-select').value)*60;
-    const expected=head.classList.contains('today')?Math.min(Math.max(0,now.getHours()*60+now.getMinutes()-120-start)/60*hour,wrap.scrollHeight-wrap.clientHeight):0;
+    const expected=head.classList.contains('today')?Math.min(Math.max(0,now.getHours()*60+now.getMinutes()-60-start)/60*hour,wrap.scrollHeight-wrap.clientHeight):0;
     return Math.abs(d.left+d.width/2-r.left-42-(wrap.clientWidth-42)/2)<1&&Math.abs(wrap.scrollTop-expected)<1;
    },date);
    assert(!(await frame.locator('#calendar-popup').isVisible()));
@@ -44,5 +44,5 @@ const root=path.resolve(__dirname,'..');let browser;
   if(scenario.time==='09:46')await page.screenshot({path:path.join(root,`.local/android-calendar-position-${process.pid}.png`)});
   assert.deepEqual(errors,[]);assert.deepEqual(network,[]);await context.close();
  }
- console.log('Calendar positioning passed: selected weekday/date centered, past/future/cross-year start at configured hour, today uses current time minus two hours with clamps, repeated selection, start changes and manual scrolling.');
+ console.log('Calendar positioning passed: selected weekday/date centered, past/future/cross-year start at configured hour, today uses current time minus one hour with clamps, repeated selection, start changes and manual scrolling.');
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{if(browser)await browser.close();});

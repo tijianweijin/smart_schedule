@@ -29,9 +29,12 @@ const root=path.resolve(__dirname,'..');let browser;
    for(const item of result){
     assert(item.expanded,JSON.stringify({mobile,size,...item}));assert.equal(item.title,'共同标题\n第二行');assert.match(item.location,/教学楼203室/);assert(item.time.includes(item.id==='start'?'10:00':item.id==='end'?'14:00':'17:00'));
     for(const field of item.fields)assert.deepEqual(field.actual,field.expected,`${size} ${item.id} ${field.kind}`);
-    assert.equal(item.height,48);assert(item.id==='start'?!item.mask.includes('to top'):item.mask.includes('to top'));
-    assert(item.id==='start'?item.checkBelow:item.checkInside);assert.deepEqual(item.order,item.id==='course'?['event-title','event-time','event-source','event-location']:['event-title','event-time','event-location']);
+    assert(item.height>0);assert(item.id==='start'?!item.mask.includes('to top'):item.mask.includes('to top'));
+    assert(item.checkBelow&&item.checkInside);assert.deepEqual(item.order,item.id==='course'?['event-title','event-time','event-source','event-location']:['event-title','event-time','event-location']);
    }
+   const copies=await ui.locator('.event-marker .marker-readable-copy').evaluateAll(elements=>elements.map(element=>({background:getComputedStyle(element).backgroundColor,shadow:getComputedStyle(element).boxShadow})));
+   assert(copies.length>0);for(const copy of copies){assert.equal(copy.background,'rgba(0, 0, 0, 0)');assert.equal(copy.shadow,'none');}
+   assert(await ui.locator('.marker-has-line').evaluateAll(elements=>elements.every(element=>getComputedStyle(element,'::before').display==='none')));
   }
   await ui.evaluate(()=>document.getElementById('schedule-wrap').scrollTop=2*96);
   await page.screenshot({path:path.join(root,'.local/marker-typography-'+(mobile?'android':'desktop')+'.png')});
@@ -39,5 +42,5 @@ const root=path.resolve(__dirname,'..');let browser;
   await page.reload();const fresh=mobile?page.frames().find(f=>f.parentFrame()):page;await fresh.waitForFunction(()=>window.__ketimeDemo);assert.equal((await fresh.evaluate(()=>window.__ketimeDemo.getState())).schedules.find(e=>e.id==='start').end,'');
   assert.deepEqual(errors,[]);await context.close();
  }
- console.log('Shared marker typography passed: desktop and 360/393/430px Android; separate title/time/location, imported location, multiline, completion persistence and unchanged 30-minute fades.');
+ console.log('Shared marker typography passed: desktop and 360/393/430px Android; transparent text background, no boundary bars, separate title/time/location, imported location, multiline, completion persistence and dynamic fades.');
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{if(browser)await browser.close();});

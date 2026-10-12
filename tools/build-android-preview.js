@@ -3,7 +3,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..'),preview=path.join(root,'android/preview'),mobile=path.join(root,'android/app/src/main/web');
 let app=fs.readFileSync(path.join(root,'ketime _demo_0.1.html'),'utf8');
-for(const key of ['ketime-demo-v0.1','project-tracker-data-v5','project-tracker-data-v4','keshi-schedule-v4','keshi-schedule-v3','ketime-ai-provider-v1']){
+for(const key of ['ketime-demo-v0.1','project-tracker-data-v5','project-tracker-data-v4','keshi-schedule-v4','keshi-schedule-v3','ketime-ai-provider-v1','ketime-timetable-scale-v1']){
  const replacement=key==='ketime-demo-v0.1'?'ketime-android-edge-preview-v1':'ketime-edge-preview-'+key;app=app.replaceAll(key,replacement);
 }
 // A desktop mouse should still render the Android coarse-pointer touch targets.

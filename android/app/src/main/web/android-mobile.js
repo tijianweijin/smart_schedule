@@ -99,8 +99,8 @@
  function queueWeekCache(){if(cacheFrame===null)cacheFrame=requestAnimationFrame(extendWeekCache);}
  function extendWeekCache(){
   cacheFrame=null;
-  if(shiftingCache||centerDatePending||timePositionPending||!scheduleWrap||!scheduleWrap.clientWidth||!document.getElementById('view-schedule').classList.contains('active')||!window.__ketimeDemo||window.KetimeTimeline&&window.KetimeTimeline.hasDraft())return;
-  var width=(scheduleWrap.clientWidth-42)/3,remaining=scheduleWrap.scrollWidth-scheduleWrap.clientWidth-scheduleWrap.scrollLeft;
+  if(shiftingCache||centerDatePending||timePositionPending||window.KetimeTimelineScale&&window.KetimeTimelineScale.active||!scheduleWrap||!scheduleWrap.clientWidth||!document.getElementById('view-schedule').classList.contains('active')||!window.__ketimeDemo||window.KetimeTimeline&&window.KetimeTimeline.hasDraft())return;
+  var width=scheduleGrid.querySelector('.day-header-cell').getBoundingClientRect().width,remaining=scheduleWrap.scrollWidth-scheduleWrap.clientWidth-scheduleWrap.scrollLeft;
   var direction=scheduleWrap.scrollLeft<width*3?-1:remaining<width*3?1:0;if(!direction)return;
   var left=scheduleWrap.scrollLeft,top=scheduleWrap.scrollTop;
   shiftingCache=true;
@@ -123,14 +123,14 @@
     if(hourCell&&startSelect){
      var now=new Date(),startMinutes=Number(startSelect.value)*60;
      // Sticky date/reminder rows remain visible; scroll only the time-grid offset.
-     var offset=focusDay===today?Math.max(0,now.getHours()*60+now.getMinutes()-120-startMinutes)/60*hourCell.getBoundingClientRect().height:0;
+     var offset=focusDay===today?Math.max(0,now.getHours()*60+now.getMinutes()-60-startMinutes)/60*hourCell.getBoundingClientRect().height:0;
      scheduleWrap.scrollTop=Math.min(offset,Math.max(0,scheduleWrap.scrollHeight-scheduleWrap.clientHeight));
     }
    }
    updateCalendarSelection();
   });
  }
- function resizeDays(){if(!scheduleWrap||!scheduleWrap.clientWidth)return;var gutter=42;document.documentElement.style.setProperty('--android-day-width',((scheduleWrap.clientWidth-gutter)/3)+'px');queueDatePosition();queueCalendarSelection();}
+ function resizeDays(){if(!scheduleWrap||!scheduleWrap.clientWidth)return;if(window.KetimeTimelineScale)window.KetimeTimelineScale.resize();else document.documentElement.style.setProperty('--android-day-width',((scheduleWrap.clientWidth-42)/3)+'px');queueDatePosition();queueCalendarSelection();}
  if(scheduleGrid)new MutationObserver(queueDatePosition).observe(scheduleGrid,{childList:true});
  var scheduleTabForCenter=document.querySelector('.view-tab[data-view="schedule"]');if(scheduleTabForCenter)scheduleTabForCenter.addEventListener('click',function(){if(!document.getElementById('view-schedule').classList.contains('active')){positionDate='';centerDatePending=true;timePositionPending=true;var now=new Date(),today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');if(window.__ketimeDemo)window.__ketimeDemo.navigateScheduleDate(today);}queueDatePosition();},true);
  var dayStartForPosition=document.getElementById('daystart-select');if(dayStartForPosition)dayStartForPosition.addEventListener('change',function(){positionDate=selectedCalendarDate;timePositionPending=true;queueDatePosition();},true);

@@ -17,31 +17,41 @@
  #schedule-grid .day-reminder-add,#schedule-grid .reminder-name{font-size:12px}
  #schedule-grid .day-reminder-item{background:transparent;align-items:center}
  #schedule-grid .reminder-toggle{margin-top:0}
- #schedule-grid .event-block{border:1.5px solid;border-radius:10px;box-shadow:none;padding:6px 8px 30px;display:flex;flex-direction:column;color:var(--event-ink);overflow:hidden;transition:filter 180ms}
+ #schedule-grid .event-block{border:1.5px solid;border-radius:10px;box-shadow:none;padding:6px 6px;display:block;color:var(--event-ink);overflow:hidden;transition:filter 180ms}
  #schedule-grid .event-block:hover{transform:none}
  #schedule-grid .event-block .event-title{font-size:16px;font-weight:700;line-height:1.2;text-align:center;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;color:inherit;min-width:0;flex:0 0 auto}
  #schedule-grid .event-block .event-location{font-size:12px;font-weight:500;line-height:1.2;margin-top:4px;text-align:center;white-space:pre-wrap;overflow-wrap:anywhere;color:inherit;overflow:hidden;flex:0 0 auto}
- #schedule-grid .event-block .event-time,#schedule-grid .event-block .event-link,#schedule-grid .event-block .event-source{display:none!important}
- #schedule-grid .event-block.event-compact{padding:0 30px 0 4px}
- #schedule-grid .event-block .event-check{width:22px;height:22px;min-width:22px;min-height:22px;right:4px;bottom:4px;border-width:1.5px;font-size:12px;background:rgba(255,255,255,.92);color:transparent}
+ #schedule-grid .event-block .event-time{display:block;font-size:13px;font-weight:600;line-height:1.2;margin-top:3px;text-align:center;white-space:pre-wrap;overflow-wrap:anywhere;color:inherit;opacity:1;flex:0 0 auto}
+ #schedule-grid .event-block .event-link,#schedule-grid .event-block .event-source{display:none!important}
+ #schedule-grid .event-block.event-compact{padding:1px 6px}
+ #schedule-grid .event-block .event-card-layout{display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:0}
+ #schedule-grid .event-block .event-content,#schedule-grid .event-block .marker-content{position:static;top:auto;bottom:auto;left:auto;right:auto;display:block;min-width:0;overflow:visible;flex:none}
+ #schedule-grid .event-block .event-completion-row{display:flex;justify-content:flex-end;align-items:center;flex:none;height:20px;min-height:20px;margin:4px 0 0;padding:0}
+ #schedule-grid .event-block .event-check{position:static;top:auto;right:auto;bottom:auto;left:auto;transform:none;flex:0 0 20px;align-self:auto;margin:0;width:20px;height:20px;min-width:20px;min-height:20px;border-width:1.5px;font-size:12px;background:rgba(255,255,255,.92);color:transparent}
+ #schedule-grid .event-block .event-check:hover{transform:scale(1.08)}
  #schedule-grid .event-block .event-check.done{background:var(--primary);border-color:var(--primary);color:#fff}
- #schedule-grid .event-block.event-compact .event-check{width:20px;height:20px;min-width:20px;min-height:20px;bottom:1px}
+ #schedule-grid .event-block.event-compact .event-completion-row{height:18px;min-height:18px}
+ #schedule-grid .event-block.event-compact .event-check{width:18px;height:18px;min-width:18px;min-height:18px;flex-basis:18px}
+ #schedule-grid .event-block.completion-fixed .event-completion-row{position:absolute;right:6px;bottom:var(--completion-inset,6px);height:20px;min-height:20px;margin:0;z-index:4}
+ #schedule-grid .event-block.completion-fixed.event-compact .event-completion-row{height:18px;min-height:18px}
+ #schedule-grid .event-block.completion-fixed.event-marker .event-card-layout{padding-bottom:24px}
+ #schedule-grid .event-block.completion-fixed.marker-measure .event-card-layout{padding-bottom:0}
+ #schedule-grid .event-block.event-content-scroll{overflow:hidden}
+ #schedule-grid .event-block.event-content-scroll .event-card-layout{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+ #schedule-grid .event-block.event-content-scroll .event-card-layout::-webkit-scrollbar{display:none}
+ #schedule-wrap{touch-action:pan-x pan-y}
  #schedule-grid .event-block.done{opacity:1;filter:none}
  #schedule-grid .event-block.continues-from{border-top-style:dashed}
- #schedule-grid .event-block.event-marker{border:0;border-radius:10px;overflow:visible;padding:6px 4px 0;display:block;color:var(--schedule-text)}
- #schedule-grid .event-marker .marker-content{left:8px;right:8px;top:6px}
- #schedule-grid .event-marker.marker-end-only .marker-content{top:auto;bottom:30px}
- #schedule-grid .event-marker.marker-start-only{display:flex;flex-direction:column;padding:6px 8px 0}
- #schedule-grid .event-marker.marker-start-only .marker-content{left:auto;right:auto;top:auto}
- #schedule-grid .event-marker .event-title{max-height:2.4em}
- #schedule-grid .event-marker.marker-expanded .event-title{max-height:none}
- #schedule-grid .event-marker:not(.marker-expanded) .event-location{display:none}
- #schedule-grid .event-marker.marker-detail-collides .event-title{max-height:2.4em}
- #schedule-grid .event-marker .event-check{right:4px;bottom:4px;flex-basis:22px}
- #schedule-grid .event-marker.marker-start-only .event-check,#schedule-grid .event-marker .marker-edge-details .event-check{position:relative;right:auto;bottom:auto;flex:0 0 22px;align-self:flex-end;margin-top:4px}
- #schedule-grid .event-marker .marker-edge-details{left:8px;right:8px}
- #schedule-grid .event-marker .marker-edge-details .marker-content{position:static}
+ #schedule-grid .event-block.event-marker{border:0;border-radius:10px;overflow:hidden;padding:6px 8px;display:block;color:var(--schedule-text)}
+ #schedule-grid .event-marker .event-title{max-height:none;-webkit-line-clamp:unset}
+ #schedule-grid .event-marker .event-location,#schedule-grid .event-marker .event-time{display:block}
  #schedule-grid .event-marker .marker-fade{border-radius:inherit}
+ #schedule-grid .event-marker.marker-has-line:before{content:none;display:none}
+ #schedule-grid .event-marker .marker-readable-copy{background:transparent;color:var(--schedule-text);box-shadow:none}
+ #schedule-grid .event-marker.marker-tail .marker-content,#schedule-grid .event-marker.marker-tail .event-check{display:block}
+ #schedule-grid .event-marker.marker-tail .event-check{display:grid}
+ #schedule-grid .event-marker.event-content-scroll{overflow:hidden}
+ #schedule-grid .event-marker.marker-measure{height:auto!important;max-height:none;min-height:0;visibility:hidden;pointer-events:none;overflow:visible}
  .untimed-panel.inbox-collapsed{flex:0 0 56px;min-height:56px;height:56px}
  .untimed-panel.inbox-expanded{flex:0 0 min(240px,30dvh);min-height:150px;height:min(240px,30dvh)}
  .untimed-panel .untimed-head{height:56px;flex-basis:56px;padding:0 12px;gap:8px}
@@ -57,13 +67,27 @@
  .schedule-form-group h3{font-size:12px;font-weight:600;color:var(--schedule-secondary);margin:0}
  #schedule-overlay .form-group,#schedule-overlay .form-row,#schedule-overlay .link-summary,#schedule-overlay .form-hint{margin:0}
  #schedule-overlay .form-row{gap:12px}
+ #schedule-overlay .form-group{min-width:0}
+ #schedule-overlay .form-input,#schedule-overlay .form-select,#schedule-overlay .ketime-control-trigger,#schedule-overlay .color-rgb-row input,.ph-config .form-input,.ph-config .form-select,.ph-config .ketime-control-trigger{border:2px solid transparent;border-radius:12px;background:#FFFFFF;color:#262623;box-shadow:none;min-width:0;outline:none}
+ #schedule-overlay .ketime-control-trigger:hover:not(:focus):not([aria-expanded=true]),.ph-config .ketime-control-trigger:hover:not(:focus):not([aria-expanded=true]){border-color:transparent}
+ #schedule-overlay .form-input:focus,#schedule-overlay .form-select:focus,#schedule-overlay .ketime-control-trigger:focus,#schedule-overlay .ketime-control-trigger[aria-expanded=true],#schedule-overlay .color-rgb-row input:focus,.ph-config .form-input:focus,.ph-config .form-select:focus,.ph-config .ketime-control-trigger:focus,.ph-config .ketime-control-trigger[aria-expanded=true]{border-color:#2A8052;background:#FFFFFF;outline:none;box-shadow:none}
+ #schedule-overlay input::placeholder,#schedule-overlay textarea::placeholder,#schedule-overlay .ketime-control-trigger.is-empty{color:#AAA69E;opacity:1}
+ #schedule-overlay .ketime-control,.ph-config .ketime-control{border:0;border-radius:0;background:transparent;box-shadow:none}
+ #schedule-overlay .schedule-date-row{grid-template-columns:minmax(0,1fr)}
+ #schedule-overlay .schedule-time-pair{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ #schedule-overlay .schedule-time-pair .form-label{display:flex;align-items:center;justify-content:space-between;gap:4px;font-size:12px;white-space:nowrap}
+ #schedule-overlay .schedule-time-pair .time-clear{float:none;flex:none;margin:0;font-size:11px}
+ #schedule-overlay .schedule-time-pair .ketime-control-trigger{padding-left:10px;padding-right:26px}
+ #schedule-overlay .schedule-time-pair .ketime-control-trigger::after{right:10px}
+ .project-scroll-buffer{width:100%;height:0;pointer-events:none}
  #schedule-overlay .modal-actions{flex:0 0 auto;margin:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--border);z-index:2}
  #schedule-overlay #save-event{min-height:44px}
- #schedule-overlay #chips-editor{position:relative;min-height:56px;max-height:132px;overflow:auto;border:1px solid #DAD7D0;border-radius:12px;background:var(--surface);padding:6px 46px 6px 8px;gap:0}
- #schedule-overlay #chips-editor:focus-within{border:2px solid var(--primary);padding:5px 45px 5px 7px;box-shadow:none}
- #schedule-overlay .chip-text{font-size:16px;color:var(--schedule-text);min-width:12px;max-width:100%;min-height:36px;padding:6px 0;line-height:1.5}
+ #schedule-overlay #chips-editor{position:relative;min-height:56px;max-height:132px;overflow:auto;border:2px solid transparent;border-radius:12px;background:#FFFFFF;padding:6px 46px 6px 8px;gap:0}
+ #schedule-overlay #chips-editor:focus-within{border-color:#2A8052;box-shadow:none}
+ #schedule-overlay .chip-text{font-size:16px;color:#262623;min-width:12px;max-width:100%;min-height:36px;padding:6px 0;line-height:1.5;outline:none;box-shadow:none;border:0;background:transparent}
  #schedule-overlay .chip-text-empty-main:empty:before{content:'输入日程名称';color:#AAA69E}
  #schedule-overlay .ph-add{position:absolute;right:7px;top:10px;width:34px;height:34px;margin:0;padding:0;border:0;background:transparent;color:var(--schedule-secondary);font-size:18px}
+ #schedule-overlay .ph-add:focus-visible{outline:none;background:var(--primary-soft);color:#2A8052}
  .schedule-name-help{font-size:12px;color:var(--schedule-secondary);margin-top:6px}
  .schedule-name-help summary{cursor:pointer;width:max-content}
  .schedule-name-help p{margin:6px 0;line-height:1.5}
@@ -73,14 +97,20 @@
  #timeline-quick-create[hidden],.timeline-range-label[hidden]{display:none}
  #timeline-quick-create h2{font-size:14px;margin-bottom:4px}
  #timeline-quick-range{font-size:12px;color:var(--schedule-secondary);margin-bottom:8px}
- #timeline-quick-name{width:100%;height:48px;border:1px solid #DAD7D0;border-radius:10px;padding:8px 10px;font-size:16px;color:var(--schedule-text);background:var(--surface)}
- #timeline-quick-name:focus{border-color:var(--primary)}
+ #timeline-quick-name{width:100%;height:48px;border:2px solid transparent;border-radius:12px;padding:8px 10px;font-size:16px;color:#262623;background:#FFFFFF;outline:none;box-shadow:none}
+ #timeline-quick-name:focus{border-color:#2A8052}
+ .untimed-panel .untimed-add-row{height:auto;min-height:46px;grid-template-columns:22px minmax(0,1fr);background:transparent}
+ .untimed-panel .untimed-item.untimed-editing{height:auto;min-height:46px}
+ .untimed-panel .untimed-input,.untimed-panel .untimed-edit-input{min-width:0;width:100%;min-height:40px;border:2px solid transparent;border-radius:12px;background:#FFFFFF;color:#262623;padding:8px 10px;line-height:1.4;outline:none;box-shadow:none}
+ .untimed-panel .untimed-input:focus,.untimed-panel .untimed-edit-input:focus{border-color:#2A8052}
+ .untimed-panel .untimed-input::placeholder{color:#AAA69E;opacity:1}
  .timeline-quick-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
  .timeline-quick-actions button{min-height:44px}
  #timeline-quick-status{font-size:12px;color:var(--danger);margin-top:6px}
  #timeline-quick-status:empty{display:none}
  .timeline-selecting,.timeline-selecting *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
  @media(max-width:600px){#schedule-overlay .modal{max-height:calc(var(--timeline-viewport-height,100dvh) - 16px);padding-top:16px}#schedule-overlay .modal-title{padding:0 16px}.schedule-form-content{padding:0 16px 16px}#schedule-overlay .modal-actions{padding-left:16px;padding-right:16px}.untimed-panel .untimed-head{gap:6px}#inbox-toggle{font-size:15px}.untimed-panel .untimed-count{font-size:12px}}
+ @media(max-width:300px){#schedule-overlay .schedule-time-pair{grid-template-columns:minmax(0,1fr)}}
  @media(prefers-reduced-motion:reduce){#view-schedule *,#schedule-overlay *,#timeline-quick-create *{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
  `;document.head.appendChild(style);
 
@@ -89,14 +119,40 @@
  var content=document.createElement('div');content.className='schedule-form-content';
  var nameGroup=document.getElementById('chips-editor').parentElement,projectRow=document.getElementById('event-project').closest('.form-row'),link=document.getElementById('event-link-summary');
  var dates=document.getElementById('event-date').closest('.form-row'),hint=dates.nextElementSibling,repeat=document.getElementById('event-repeat').closest('.form-row'),repeatOptions=document.getElementById('event-repeat-options');
+ var timePair=document.createElement('div');timePair.className='form-row schedule-time-pair';timePair.appendChild(document.getElementById('event-start').parentElement);timePair.appendChild(document.getElementById('event-end').parentElement);dates.classList.remove('three');dates.classList.add('schedule-date-row');
  function group(title,nodes){var section=document.createElement('section'),heading=document.createElement('h3');section.className='schedule-form-group';heading.textContent=title;section.appendChild(heading);nodes.forEach(function(node){section.appendChild(node)});content.appendChild(section)}
- group('基本信息',[nameGroup,projectRow,link]);group('时间',[dates,hint]);group('其他设置',[document.getElementById('event-location').parentElement,repeat,repeatOptions,document.getElementById('event-notes').parentElement,document.getElementById('event-color-presets').parentElement]);modal.insertBefore(content,footer);
+ group('基本信息',[nameGroup,projectRow,link]);group('时间',[dates,timePair,hint]);group('其他设置',[document.getElementById('event-location').parentElement,repeat,repeatOptions,document.getElementById('event-notes').parentElement,document.getElementById('event-color-presets').parentElement]);modal.insertBefore(content,footer);
  var explanation=nameGroup.querySelector('.form-hint'),help=document.createElement('details');help.className='schedule-name-help';help.innerHTML='<summary>ⓘ 数字占位符说明</summary><p>将光标放在名称的任意位置，点右侧 # 插入数字。可插入多个占位符，点击占位符可修改范围与格式。</p>';if(explanation)explanation.remove();nameGroup.appendChild(help);
  document.getElementById('chips-editor').addEventListener('click',function(event){if(event.target===event.currentTarget){var field=event.currentTarget.querySelector('.chip-text');if(field)field.focus()}});
  overlay.addEventListener('keydown',function(event){if(event.isComposing||event.keyCode===229)return;if(event.key==='Enter'&&!event.shiftKey&&(event.target.classList.contains('chip-text')||event.ctrlKey||event.metaKey)){event.preventDefault();document.getElementById('save-event').click()}});
  new MutationObserver(function(records){if(!overlay.classList.contains('visible'))return;var editing=document.getElementById('delete-event').style.display!=='none';document.getElementById('save-event').textContent=editing?'保存修改':'创建日程';content.scrollTop=0;}).observe(overlay,{attributes:true,attributeFilter:['class']});
  function keepInputVisible(event){if(overlay.classList.contains('visible')&&event.target.closest('.schedule-form-content'))requestAnimationFrame(function(){event.target.scrollIntoView({block:'nearest',inline:'nearest'})});}
  content.addEventListener('focusin',keepInputVisible);
+
+ // Layout-only tail space: no new data or saved UI preference. Measure from the
+ // list's actual end, excluding this spacer, so repeated layouts cannot grow it.
+ var projectView=document.getElementById('view-projects'),projectList=document.getElementById('projects-list'),projectApp=projectView.querySelector('.project-app'),projectBuffer=document.createElement('div'),bufferFrame=null;
+ projectBuffer.className='project-scroll-buffer';projectBuffer.setAttribute('aria-hidden','true');projectApp.appendChild(projectBuffer);
+ function layoutProjectBuffer(){
+   bufferFrame=null;if(!projectView.classList.contains('active'))return;
+   var last=projectList.querySelector('.project-card:last-child');
+   if(!last){projectBuffer.style.height='0px';return}
+   var viewRect=projectView.getBoundingClientRect(),nav=document.querySelector('.app-nav'),bottomNav=document.querySelector('.android-bottom-nav');
+   var internalScroll=/auto|scroll/.test(getComputedStyle(projectView).overflowY);
+   var height=internalScroll?projectView.clientHeight:innerHeight-(nav?nav.getBoundingClientRect().height:0)-(bottomNav?bottomNav.getBoundingClientRect().height:0);
+   var lastBottom=last.getBoundingClientRect().bottom-viewRect.top+(internalScroll?projectView.scrollTop:0);
+   var baseEnd=projectBuffer.getBoundingClientRect().top-viewRect.top+(internalScroll?projectView.scrollTop:0)+(parseFloat(getComputedStyle(projectApp).paddingBottom)||0);
+   var desired=Math.ceil(Math.max(0,Math.max(lastBottom,height)+height/3-baseEnd));
+   if(projectBuffer.style.height!==desired+'px')projectBuffer.style.height=desired+'px';
+   projectBuffer.dataset.viewportHeight=height.toFixed(2);projectBuffer.dataset.lastBottom=lastBottom.toFixed(2);
+ }
+ function queueProjectBuffer(){if(bufferFrame===null)bufferFrame=requestAnimationFrame(layoutProjectBuffer)}
+ new MutationObserver(queueProjectBuffer).observe(projectList,{childList:true,subtree:true,characterData:true});
+ new MutationObserver(queueProjectBuffer).observe(projectView,{attributes:true,attributeFilter:['class']});
+ if(typeof ResizeObserver==='function'){var projectObserver=new ResizeObserver(queueProjectBuffer);projectObserver.observe(projectApp);projectObserver.observe(projectList)}
+ window.addEventListener('resize',queueProjectBuffer);if(window.visualViewport)window.visualViewport.addEventListener('resize',queueProjectBuffer);
+ if(document.fonts)document.fonts.ready.then(queueProjectBuffer);queueProjectBuffer();
+ window.KetimeProjectBuffer={layout:queueProjectBuffer};
 
  // Session-only inbox expansion: no local data migration or persistent UI preference.
  var panel=document.querySelector('.untimed-panel'),head=panel.querySelector('.untimed-head'),heading=document.getElementById('untimed-title'),toggle=document.createElement('button'),expanded=false;
@@ -105,6 +161,67 @@
  toggle.addEventListener('click',function(){expand(!expanded)});document.getElementById('add-untimed-todo').addEventListener('click',function(){expand(true)},true);expand(false);
  var inboxTouch=null;head.addEventListener('touchstart',function(event){if(event.target.closest('button,input')||event.touches.length!==1)return;inboxTouch={x:event.touches[0].clientX,y:event.touches[0].clientY};},{passive:true});head.addEventListener('touchend',function(event){if(!inboxTouch)return;var touch=event.changedTouches[0],dy=touch.clientY-inboxTouch.y,dx=touch.clientX-inboxTouch.x;inboxTouch=null;if(Math.abs(dx)<24&&Math.abs(dy)>24)expand(dy<0);},{passive:true});
 
+ // Measure rendered fields, not character counts. Known-duration geometry and
+ // occurrence state stay unchanged; marker visuals and conflicts use real size.
+ var observedWidths=new WeakMap(),observedTargets=new Set(),cardObserver=typeof ResizeObserver==='function'?new ResizeObserver(function(entries){var changed=false;entries.forEach(function(entry){var width=entry.contentRect.width,previous=observedWidths.get(entry.target);observedWidths.set(entry.target,width);if(previous!==undefined&&Math.abs(previous-width)>.25)changed=true});if(changed&&window.KetimeTimelineLayout)window.KetimeTimelineLayout()}):null;
+ function observeCard(element){if(cardObserver&&!observedTargets.has(element)){observedTargets.add(element);observedWidths.set(element,element.getBoundingClientRect().width);cardObserver.observe(element)}}
+ function pixels(style,key){return parseFloat(style[key])||0}
+ function capField(field,height){if(!field)return;field.style.maxHeight=Math.max(0,height)+'px';field.style.display=height>.1?'block':'none';field.style.webkitLineClamp='unset'}
+ function measureFields(block){
+   var marker=block.classList.contains('event-marker'),fixed=block.classList.contains('completion-fixed'),content=block.querySelector('.event-content,.marker-content'),layout=block.querySelector('.event-card-layout');
+   if(!content||!layout||!block.clientWidth)return null;
+   block.classList.toggle('event-compact',!marker&&block.clientHeight<96);
+   if(marker){block.classList.add('marker-expanded');block.classList.remove('marker-detail-collides')}
+   var style=getComputedStyle(block),row=block.querySelector('.event-completion-row'),title=content.querySelector('.event-title'),time=content.querySelector('.event-time'),location=content.querySelector('.event-location');
+   var fields=[title,time,location].filter(Boolean),short=!marker&&block.clientHeight<64;
+   fields.forEach(function(field){field.style.display='block';field.style.maxHeight='none';field.style.fontSize='';field.style.lineHeight='';field.style.marginTop='';field.style.webkitLineClamp='unset'});
+   if(short){title.style.fontSize='11px';title.style.lineHeight='1.05';if(time){time.style.fontSize='8.5px';time.style.lineHeight='1.05';time.style.marginTop='0'}}
+   var paddingTop=pixels(style,'paddingTop'),paddingBottom=pixels(style,'paddingBottom');
+   layout.style.maxHeight='none';layout.style.paddingRight=short?'26px':'';
+   if(fixed)block.style.setProperty('--completion-inset',Math.max(0,Math.min(6,(block.clientHeight-(short?18:20))/2))+'px');
+   if(marker){observeCard(block);fields.forEach(observeCard);var natural=layout.getBoundingClientRect().height+paddingTop+paddingBottom;block.dataset.contentHeight=natural.toFixed(2);return natural}
+   var available=Math.max(0,block.clientHeight-paddingTop-paddingBottom-(short?0:row.getBoundingClientRect().height+4));
+   layout.style.maxHeight=available+'px';
+   var timeNatural=time?time.getBoundingClientRect().height:0,timeStyle=time?getComputedStyle(time):null,timeMargin=time?pixels(timeStyle,'marginTop')+pixels(timeStyle,'marginBottom'):0;
+   var titleLine=title?parseFloat(getComputedStyle(title).lineHeight):0;
+   if(available<titleLine+timeNatural+timeMargin){
+     // 15 minutes is only 24px. Keep true geometry, a readable summary and the
+     // normal-flow completion row; overflow scrolls inside the existing card.
+     capField(title,titleLine);if(location)capField(location,0);block.classList.add('event-content-scroll');observeCard(block);fields.forEach(observeCard);return null;
+   }
+   var timeReserve=Math.min(timeNatural+(time?timeMargin:0),Math.max(0,available-(title?parseFloat(getComputedStyle(title).lineHeight):0)));
+   var titleNatural=title?title.getBoundingClientRect().height:0,titleBudget=Math.max(0,available-timeReserve);
+   var titleHeight=Math.min(titleNatural,Math.floor((titleBudget+.1)/titleLine)*titleLine);if(!titleHeight)titleHeight=Math.min(titleNatural,titleBudget);
+   capField(title,titleHeight);available=Math.max(0,available-(title?title.getBoundingClientRect().height:0));
+   if(time){var timeBudget=Math.max(0,available-timeMargin),timeLine=parseFloat(timeStyle.lineHeight),timeHeight=Math.min(timeNatural,Math.floor((timeBudget+.1)/timeLine)*timeLine);if(!timeHeight)timeHeight=Math.min(timeNatural,timeBudget);capField(time,timeHeight);available=Math.max(0,available-time.getBoundingClientRect().height-(timeHeight?timeMargin:0))}
+   if(location){var locationStyle=getComputedStyle(location),margin=pixels(locationStyle,'marginTop')+pixels(locationStyle,'marginBottom'),line=parseFloat(locationStyle.lineHeight),natural=location.getBoundingClientRect().height,budget=Math.max(0,available-margin),height=Math.min(natural,Math.floor((budget+.1)/line)*line);capField(location,height)}
+   block.classList.toggle('event-content-scroll',layout.scrollHeight>available+.5);observeCard(block);fields.forEach(observeCard);return null;
+ }
+ function layoutCards(root){
+   observedTargets.forEach(function(element){if(!element.isConnected){cardObserver.unobserve(element);observedTargets.delete(element);observedWidths.delete(element)}});
+   for(var pass=0;pass<8;pass++){
+     var heights=new Map(),markers=Array.from(root.querySelectorAll('.event-marker'));
+     root.querySelectorAll('.event-block').forEach(function(block){var height=measureFields(block);if(height!==null){var key=block.dataset.eventId+'|'+block.dataset.occurrence;heights.set(key,Math.max(heights.get(key)||0,height))}});
+     markers.forEach(function(block){var fade=block.querySelector('.marker-fade');if(!fade)return;var full=Math.min(api.hourHeight*24,heights.get(block.dataset.eventId+'|'+block.dataset.occurrence)||1),anchor=Number(block.dataset.markerAnchor),top=anchor-(block.classList.contains('marker-end-only')?full:0),visibleTop=Math.max(0,top),visibleBottom=Math.min(api.hourHeight*24,top+full),height=Math.max(0,visibleBottom-visibleTop),offset=visibleTop-top;
+       block.style.top=visibleTop+'px';block.style.height=height+'px';block.dataset.markerFullHeight=full.toFixed(2);block.classList.toggle('event-content-scroll',height<full-.5);if(height<full-.5)block.querySelector('.event-card-layout').style.maxHeight=Math.max(0,height-16-(block.classList.contains('completion-fixed')?24:0))+'px';
+       fade.style.maskSize=fade.style.webkitMaskSize='100% '+full.toFixed(2)+'px';fade.style.maskPosition=fade.style.webkitMaskPosition='0 '+(-offset).toFixed(2)+'px';fade.dataset.contentHeight=full.toFixed(2);
+     });
+     var changed=false;root.querySelectorAll('.day-col-overlay').forEach(function(column){var cards=Array.from(column.querySelectorAll('.event-block'));var plan=window.KetimeOverlap.plan(cards.map(function(card){return{start:parseFloat(card.style.top)/api.hourHeight*60,end:(parseFloat(card.style.top)+parseFloat(card.style.height))/api.hourHeight*60,identity:card.dataset.eventId+'|'+card.dataset.occurrence}}));
+       cards.forEach(function(card,index){var item=plan[index],left=item.lanes>1?'calc('+(item.lane*100/item.lanes)+'% + 2px)':'4px',width=item.lanes>1?'calc('+(100/item.lanes)+'% - 4px)':'',right=item.lanes>1?'auto':'4px';if(card.style.width!==width||card.style.left!==left||card.style.right!==right){card.style.left=left;card.style.width=width;card.style.right=right;changed=true}
+         card.classList.toggle('has-conflict',item.ranges.length>0);card.dataset.conflicts=JSON.stringify(item.ranges);var label=(card.getAttribute('aria-label')||'').replace(/，有时间重叠/g,'');card.setAttribute('aria-label',label+(item.ranges.length?'，有时间重叠':''));var bg=window.KetimeOverlap.background(item.ranges,parseFloat(card.style.top)/api.hourHeight*60,parseFloat(card.style.height)/api.hourHeight*60,card.classList.contains('event-marker')?undefined:getComputedStyle(card).getPropertyValue('--event-ink').trim());var fade=card.querySelector('.marker-fade');if(fade)fade.style.backgroundImage=bg;else card.style.backgroundImage=bg;
+       });
+     });if(!changed)break;
+   }
+ }
+ window.KetimeCardTextLayout={layout:layoutCards};
+ new MutationObserver(function(){if(window.KetimeTimelineLayout)window.KetimeTimelineLayout()}).observe(grid,{childList:true,subtree:true,characterData:true});
+ if(document.fonts)document.fonts.ready.then(function(){if(window.KetimeTimelineLayout)window.KetimeTimelineLayout()});
+ // Rebuild measured boundary segments when viewport/lane widths change; the
+ // initial main render happened before this module installed its shared styles.
+ var markerRenderFrame=null,lastGridWidth=0;
+ function queueMarkerRender(){if(markerRenderFrame!==null)return;markerRenderFrame=requestAnimationFrame(function(){markerRenderFrame=null;if(document.getElementById('view-schedule').classList.contains('active')&&!(window.KetimeTimeline&&window.KetimeTimeline.hasDraft())&&!(window.KetimeTimelineScale&&window.KetimeTimelineScale.active))api.render()})}
+ if(typeof ResizeObserver==='function')new ResizeObserver(function(entries){var width=entries[0].contentRect.width;if(width&&Math.abs(width-lastGridWidth)>.25){lastGridWidth=width;queueMarkerRender()}}).observe(grid);
+ if(document.fonts)document.fonts.ready.then(queueMarkerRender);queueMarkerRender();
  var draft=null,timer=null,scrollFrame=null,lastStamp=0,suppressClickUntil=0;
  var label=document.createElement('div');label.className='timeline-range-label';label.hidden=true;document.body.appendChild(label);
  var quick=document.createElement('form');quick.id='timeline-quick-create';quick.hidden=true;quick.setAttribute('role','dialog');quick.setAttribute('aria-labelledby','timeline-quick-title');quick.innerHTML='<h2 id="timeline-quick-title">新建日程</h2><p id="timeline-quick-range"></p><input id="timeline-quick-name" maxlength="200" autocomplete="off" placeholder="输入日程名称" aria-label="快捷日程名称"><p id="timeline-quick-status" role="alert"></p><div class="timeline-quick-actions"><button type="button" id="timeline-quick-cancel" class="btn">取消</button><button type="submit" class="btn btn-primary">创建日程</button></div>';document.body.appendChild(quick);
@@ -133,5 +250,56 @@
  document.addEventListener('keydown',function(event){if(event.key==='Escape'&&draft){event.preventDefault();event.stopImmediatePropagation();cancel()}},true);document.querySelectorAll('.view-tab').forEach(function(tab){tab.addEventListener('click',cancel,true)});document.getElementById('date-picker-btn').addEventListener('click',cancel,true);document.getElementById('add-event-btn').addEventListener('click',cancel,true);window.addEventListener('blur',function(){if(draft&&draft.phase!=='editing')cancel()});document.addEventListener('visibilitychange',function(){if(document.hidden)cancel()});
  function viewportChanged(){var viewport=window.visualViewport;document.documentElement.style.setProperty('--timeline-viewport-height',(viewport?viewport.height:innerHeight)+'px');document.documentElement.style.setProperty('--timeline-viewport-top',(viewport?viewport.offsetTop:0)+'px');positionQuick();if(overlay.classList.contains('visible')&&content.contains(document.activeElement))keepInputVisible({target:document.activeElement});}
  if(window.visualViewport){window.visualViewport.addEventListener('resize',viewportChanged);window.visualViewport.addEventListener('scroll',viewportChanged);}window.addEventListener('resize',viewportChanged);viewportChanged();wrap.addEventListener('scroll',function(){if(draft)draw()},{passive:true});
- new MutationObserver(function(){if(draft&&draft.phase!=='pending')draw()}).observe(grid,{childList:true});
+ function readableMarkers(){grid.querySelectorAll('.event-marker .event-title,.event-marker .event-location').forEach(function(field){if(field.querySelector('.marker-readable-copy'))return;var copy=document.createElement('span');copy.className='marker-readable-copy';copy.textContent=field.textContent;field.replaceChildren(copy)});}
+ new MutationObserver(function(){readableMarkers();if(draft&&draft.phase!=='pending')draw()}).observe(grid,{childList:true});readableMarkers();
+ wrap.addEventListener('scroll',function(){if(typeof window.KetimeTimelineLayout==='function')window.KetimeTimelineLayout()},{passive:true});
+
+ // A local UI preference only. One scale drives both axes, never CSS page zoom.
+ var scaleKey='ketime-timetable-scale-v1',scale=1,baseWidth=0,pinch=null,pinchFrame=null,pinchPending=null,blockedTouches=false,zoomGeneration=0,zoomReady=false;
+ try{var savedScale=Number(localStorage.getItem(scaleKey));if(Number.isFinite(savedScale)&&savedScale>=.75&&savedScale<=1.75)scale=savedScale}catch(ignore){}
+ function saveScale(){try{localStorage.setItem(scaleKey,String(scale))}catch(ignore){}}
+ function zoomPoint(){var b=visibleBounds();return{x:(b.left+(window.KetimeAndroid?42:56)+b.right)/2,y:(b.top+b.bottom)/2}}
+ function zoomWorld(point){var first=grid.querySelector('.day-col-overlay');if(!first)return null;var r=first.getBoundingClientRect();return{x:(point.x-r.left)/r.width,y:(point.y-r.top)/api.hourHeight}}
+ function alignZoom(point,world){var first=grid.querySelector('.day-col-overlay');if(!first||!world)return;var r=first.getBoundingClientRect();wrap.scrollLeft+=r.left+world.x*r.width-point.x;wrap.scrollTop+=r.top+world.y*api.hourHeight-point.y;}
+ function applyScale(value,point,world,persist){
+   if(!wrap.clientWidth)return;value=Math.max(.75,Math.min(1.75,Number(value)));if(!Number.isFinite(value))return;
+   point=point||zoomPoint();world=zoomReady?(world||zoomWorld(point)):null;scale=value;
+   var gutter=window.KetimeAndroid?42:56,count=window.KetimeAndroid?21:7;
+   baseWidth=window.KetimeAndroid?(wrap.clientWidth-gutter)/3:(Math.max(820,wrap.clientWidth)-gutter)/7;
+   var width=baseWidth*scale;grid.style.gridTemplateColumns=gutter+'px repeat('+count+','+width+'px)';grid.style.width=(gutter+count*width)+'px';grid.style.minWidth='0';
+   var reminderSize=grid.style.getPropertyValue('--reminder-height'),generation=++zoomGeneration,ratio=96*scale/api.hourHeight;
+   api.setScale(scale);
+   if(pinch||blockedTouches){
+     // Touch targets must stay connected until both fingers lift. Replacing the
+     // grid here would swallow the rest of that native touch sequence.
+     grid.querySelectorAll('.event-block,.now-line').forEach(function(block){block.style.top=parseFloat(block.style.top)*ratio+'px';if(block.classList.contains('event-marker'))block.dataset.markerAnchor=Number(block.dataset.markerAnchor)*ratio;else if(block.classList.contains('event-block'))block.style.height=parseFloat(block.style.height)*ratio+'px'});
+     if(window.KetimeCardTextLayout)window.KetimeCardTextLayout.layout(grid);if(window.KetimeTimelineLayout)window.KetimeTimelineLayout();
+   }else api.render();
+   if(reminderSize)grid.style.setProperty('--reminder-height',reminderSize);alignZoom(point,world);
+   requestAnimationFrame(function(){if(generation===zoomGeneration)alignZoom(point,world);requestAnimationFrame(function(){if(generation===zoomGeneration)alignZoom(point,world)})});zoomReady=true;if(persist)saveScale();
+ }
+ window.KetimeTimelineScale={get value(){return scale},get active(){return !!pinch||blockedTouches},get baseDayWidth(){return baseWidth},set:function(value,point){applyScale(value,point,null,true)},resize:function(){var next=window.KetimeAndroid?(wrap.clientWidth-42)/3:(Math.max(820,wrap.clientWidth)-56)/7;if(next>0&&Math.abs(next-baseWidth)>.1)applyScale(scale,null,null,false)}};
+ function zoomAllowed(point){var b=visibleBounds(),target=document.elementFromPoint(point.clientX,point.clientY);return target&&wrap.contains(target)&&quick.hidden&&document.getElementById('view-schedule').classList.contains('active')&&!overlay.classList.contains('visible')&&point.clientX>b.left+(window.KetimeAndroid?42:56)&&point.clientX<b.right&&point.clientY>b.top&&point.clientY<b.bottom}
+ function geometry(touches){return{x:(touches[0].clientX+touches[1].clientX)/2,y:(touches[0].clientY+touches[1].clientY)/2,distance:Math.hypot(touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY)}}
+ function eatGesture(event){if(event.cancelable)event.preventDefault();event.stopImmediatePropagation();suppressClickUntil=performance.now()+800}
+ function flushPinch(){pinchFrame=null;if(!pinch||!pinchPending)return;var current=pinchPending;pinchPending=null;applyScale(pinch.scale*current.distance/pinch.distance,{x:current.x,y:current.y},pinch.world,false)}
+ document.addEventListener('touchstart',function(event){
+   if(blockedTouches){eatGesture(event);return}
+   if(event.touches.length!==2||!Array.from(event.touches).every(zoomAllowed))return;
+   cancel();var g=geometry(event.touches);if(g.distance<1)return;
+   pinch={distance:g.distance,scale:scale,world:zoomWorld(g)};eatGesture(event);
+ },{capture:true,passive:false});
+ document.addEventListener('touchmove',function(event){
+   if(blockedTouches){eatGesture(event);return}if(!pinch)return;eatGesture(event);
+   if(event.touches.length!==2)return;pinchPending=geometry(event.touches);if(pinchFrame===null)pinchFrame=requestAnimationFrame(flushPinch);
+ },{capture:true,passive:false});
+ function endPinch(event){
+   if(!pinch&&!blockedTouches)return;eatGesture(event);
+   if(pinch&&event.touches.length<2){if(pinchFrame!==null)cancelAnimationFrame(pinchFrame);flushPinch();pinch=null;pinchPending=null;saveScale();blockedTouches=event.touches.length>0}
+   if(!event.touches.length){blockedTouches=false;applyScale(scale,null,null,false);wrap.dispatchEvent(new Event('scroll'))}
+ }
+ document.addEventListener('touchend',endPinch,{capture:true,passive:false});document.addEventListener('touchcancel',endPinch,{capture:true,passive:false});
+ function resetPinch(){if(pinchFrame!==null)cancelAnimationFrame(pinchFrame);pinchFrame=null;pinchPending=null;pinch=null;blockedTouches=false;saveScale()}
+ document.addEventListener('visibilitychange',function(){if(document.hidden)resetPinch()});window.addEventListener('blur',resetPinch);document.querySelectorAll('.view-tab').forEach(function(tab){tab.addEventListener('click',resetPinch,true)});
+ applyScale(scale,null,null,false);new ResizeObserver(function(){window.KetimeTimelineScale.resize()}).observe(wrap);
 })();

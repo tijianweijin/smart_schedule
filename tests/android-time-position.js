@@ -13,11 +13,11 @@ const root=path.resolve(__dirname,'..');let browser;
   const frame=page.frames().find(f=>f.parentFrame());await frame.waitForFunction(()=>window.__ketimeDemo&&document.querySelector('.day-header-cell.today'));
   async function positioned(){await frame.waitForFunction(()=>{
    const wrap=document.getElementById('schedule-wrap'),now=new Date(),start=Number(document.getElementById('daystart-select').value),hour=document.querySelector('.day-click-cell').getBoundingClientRect().height;
-   const expected=Math.min(Math.max(0,now.getHours()*60+now.getMinutes()-120-start*60)/60*hour,wrap.scrollHeight-wrap.clientHeight);
+   const expected=Math.min(Math.max(0,now.getHours()*60+now.getMinutes()-60-start*60)/60*hour,wrap.scrollHeight-wrap.clientHeight);
    return Math.abs(wrap.scrollTop-expected)<1;
   });}
   await positioned();
-  const layout=await frame.evaluate(()=>{const wrap=document.getElementById('schedule-wrap'),first=document.querySelector('.day-click-cell').getBoundingClientRect(),reminder=document.querySelector('.day-reminder-cell').getBoundingClientRect(),now=new Date(),start=Number(document.getElementById('daystart-select').value);return{scroll:wrap.scrollTop,max:wrap.scrollHeight-wrap.clientHeight,target:Math.max(0,now.getHours()*60+now.getMinutes()-120-start*60),hourHeight:first.height,timeTop:first.top,reminderBottom:reminder.bottom};});
+  const layout=await frame.evaluate(()=>{const wrap=document.getElementById('schedule-wrap'),first=document.querySelector('.day-click-cell').getBoundingClientRect(),reminder=document.querySelector('.day-reminder-cell').getBoundingClientRect(),now=new Date(),start=Number(document.getElementById('daystart-select').value);return{scroll:wrap.scrollTop,max:wrap.scrollHeight-wrap.clientHeight,target:Math.max(0,now.getHours()*60+now.getMinutes()-60-start*60),hourHeight:first.height,timeTop:first.top,reminderBottom:reminder.bottom};});
   if(scenario.bottom)assert(Math.abs(layout.scroll-layout.max)<1,'Late-day viewport must clamp to the bottom');
   else assert(Math.abs(layout.timeTop+layout.target/60*layout.hourHeight-layout.reminderBottom)<1,'Target minute must align beneath sticky reminders');
   if(scenario.time==='09:46')await page.screenshot({path:path.join(root,'.local/android-edge-time-position.png')});
@@ -28,5 +28,5 @@ const root=path.resolve(__dirname,'..');let browser;
   await frame.selectOption('#daystart-select','12');await positioned();
   assert.deepEqual(errors,[]);await context.close();
  }
- console.log('Time positioning passed: 09:46 -> 07:46, early/midnight start clamp, custom start, late-day bottom clamp, return positioning, start changes, manual scrolling preserved.');
+ console.log('Time positioning passed: 09:46 -> 08:46, early/midnight start clamp, custom start, late-day bottom clamp, return positioning, start changes, manual scrolling preserved.');
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{if(browser)await browser.close();});

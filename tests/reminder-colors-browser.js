@@ -77,5 +77,5 @@ const root=path.resolve(__dirname,'..');let browser;
   await page.screenshot({path:path.join(root,'.local/custom-colors'+(mobile?'-android':'-desktop')+'.png')});
   assert.deepEqual(errors,[]);await context.close();
  }
- console.log('Reminder/color browser checks passed: top anchoring, add after list, internal scrolling, inline create, 16 presets, spectrum, hue, keyboard, RGB validation, saving/editing/reload/cancel, linked task, repeat occurrence and Android sizes.');
+ console.log('Reminder/color browser checks passed: top anchoring, add after list, internal scrolling, inline create, 7 schedule presets, spectrum, hue, keyboard, RGB validation, saving/editing/reload/cancel, linked task, repeat occurrence and Android sizes.');
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{if(browser)await browser.close()});

@@ -13,11 +13,12 @@ test('one occurrence cannot conflict with itself but later occurrences can',()=>
 test('midnight and custom day boundaries split real intervals correctly',()=>{assert.deepEqual(api.segmentRange({start:'23:00',end:'02:00',segment:'start'},0),{start:1380,end:1440});assert.deepEqual(api.segmentRange({start:'23:00',end:'02:00',segment:'continuation'},0),{start:0,end:120});assert.deepEqual(api.segmentRange({start:'05:00',end:'07:00',segment:'start'},6),{start:1380,end:1440});assert.deepEqual(api.segmentRange({start:'05:00',end:'07:00',segment:'continuation'},6),{start:0,end:60})});
 test('short event visual padding does not create false conflicts',()=>{assert.deepEqual(api.segmentRange({start:'09:00',end:'09:01',segment:'start'},0),{start:540,end:541});assert(api.plan([range(540,541),range(542,543)]).every(x=>!x.ranges.length));assert.equal(api.background([],0,60),'')});
 test('zero-length or invalid ranges are ignored',()=>{assert(api.plan([range(60,60),range(NaN,120),range(120,60)]).every(x=>!x.ranges.length))});
-test('one-sided events conflict over their half-hour visual bands',()=>{
- const start=api.segmentRange({start:'09:00',end:'',segment:'start'},6),end=api.segmentRange({start:'',end:'09:45',segment:'start'},6);
- assert.deepEqual(start,{start:180,end:210});assert.deepEqual(end,{start:195,end:225});
- assert.deepEqual(api.plan([start,end]).map(x=>x.ranges),[[{start:195,end:210}],[{start:195,end:210}]]);
- assert.deepEqual(api.segmentRange({start:'05:50',end:'',segment:'continuation'},6),{start:0,end:20});
- assert.deepEqual(api.segmentRange({start:'',end:'06:10',segment:'continuation'},6),{start:1420,end:1440});
+test('one-sided events use measured ranges and never invent an hour',()=>{
+ const start=api.segmentRange({start:'09:00',end:'',visualStartMinutes:180,visualEndMinutes:212,segment:'start'},6),end=api.segmentRange({start:'',end:'09:45',visualStartMinutes:193,visualEndMinutes:225,segment:'start'},6);
+ assert.deepEqual(start,{start:180,end:212});assert.deepEqual(end,{start:193,end:225});
+ assert.deepEqual(api.plan([start,end]).map(x=>x.ranges),[[{start:193,end:212}],[{start:193,end:212}]]);
+ assert.deepEqual(api.segmentRange({start:'09:00',end:'',segment:'start'},6),{start:180,end:180});
+ assert.deepEqual(api.segmentRange({start:'',end:'09:45',segment:'start'},6),{start:225,end:225});
+ assert.deepEqual(api.segmentRange({start:'',end:'',segment:'start'},6),{start:0,end:0});
  assert.deepEqual(api.segmentRange({start:'',end:'06:10',visualStartMinutes:0,visualEndMinutes:10},6),{start:0,end:10});
 });

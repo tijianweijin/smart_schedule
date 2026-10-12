@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from bupt_sync import SyncError
 import chatgpt_client
-from schedule_assistant import validate_input, validate_output, OUTPUT_SCHEMA, calendar_hints
+from schedule_assistant import validate_input, validate_output, OUTPUT_SCHEMA, calendar_hints, INSTRUCTIONS
 
 
 def context():
@@ -19,6 +19,15 @@ def event(**changes):
 
 
 class ScheduleAssistantTests(unittest.TestCase):
+    def test_concise_title_instructions_preserve_information_and_do_not_truncate(self):
+        for instruction in ('不超过10个汉字', '禁止机械截断', 'notes', '用户明确给定', '数字电路实验', '聚餐讨论旅行'):
+            self.assertIn(instruction, INSTRUCTIONS)
+        long_name='用户明确指定的完整名称不应被机械截断'
+        row=event(name=long_name,notes='与朋友吃火锅，并讨论国庆旅游计划')
+        result=validate_output({'eventCount':1,'message':'确认','events':[row]},context())
+        self.assertEqual(result['events'][0]['name'],long_name)
+        self.assertEqual(result['events'][0]['notes'],row['notes'])
+
     def test_context_only_explicit_safe_fields(self):
         payload = {"messages": [{"role": "user", "content": "明天学习"}], "context": {**context(), "schedules": [{"private": "fixture"}], "password": "fixture"}}
         history, clean = validate_input(payload)
