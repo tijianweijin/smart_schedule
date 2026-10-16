@@ -1,0 +1,15 @@
+{
+  "androidBaseline": "1.0.37",
+  "platform": "HarmonyOS",
+  "sharedMainSha256": "bafac57a81b3287bd5704b66302dd40d260b0d211cdb8470853963e845f5d0da",
+  "rawFiles": [
+    "android-mobile.css",
+    "android-mobile.js",
+    "harmony-bridge.js",
+    "index.html"
+  ],
+  "nativeModules": [
+    "school.js",
+    "runtime.js"
+  ]
+}

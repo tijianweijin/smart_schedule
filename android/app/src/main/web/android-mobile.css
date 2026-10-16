@@ -133,8 +133,9 @@ body{padding-bottom:calc(var(--android-bottom-height) + env(safe-area-inset-bott
 .android-time-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .android-time-column{min-width:0}
 .android-time-column h3{font-size:12px;font-weight:400;color:var(--text-2);text-align:center;margin:0 0 8px}
-.android-time-list{position:relative;max-height:min(32dvh,240px);overflow:auto;overscroll-behavior:contain;padding:4px;border:1px solid var(--border);border-radius:10px;background:var(--surface-soft);scroll-padding:4px}
-.android-time-option{display:block;min-height:44px;width:100%;border:0;border-radius:6px;background:transparent;color:var(--text-2);font-size:18px;font-variant-numeric:tabular-nums;text-align:center}
+.android-time-list{position:relative;height:220px;max-height:none;overflow:auto;overscroll-behavior:contain;padding:88px 4px;border:0;border-radius:12px;background:#fff;scroll-snap-type:y mandatory;scroll-behavior:auto;touch-action:pan-y;scrollbar-width:none!important}
+.android-time-option{display:block;height:44px;min-height:44px;max-height:44px;padding:0;width:100%;border:0;border-radius:8px;background:transparent;color:var(--text-2);font-size:18px;font-variant-numeric:tabular-nums;text-align:center;scroll-snap-align:center;flex:none;overflow-anchor:none}
+.android-time-list::-webkit-scrollbar{display:none}
 .android-time-option[aria-pressed="true"]{color:var(--primary);background:var(--primary-soft);font-weight:600}
 .android-choice-list,.android-time-list{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 .android-choice-list::-webkit-scrollbar,.android-time-list::-webkit-scrollbar{width:4px}

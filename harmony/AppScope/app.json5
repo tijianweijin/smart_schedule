@@ -1,0 +1,10 @@
+{
+  "app": {
+    "bundleName": "cn.ketime.app",
+    "vendor": "Ketime",
+    "versionCode": 1000001,
+    "versionName": "1.0.1",
+    "icon": "$media:ketime_icon",
+    "label": "$string:app_name"
+  }
+}

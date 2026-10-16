@@ -180,7 +180,7 @@
  function sync(source){var control=controls.get(source);if(!control)return;var text=display(source),name=label(source)+'，'+text;if(control.value.textContent!==text)control.value.textContent=text;if(control.button.disabled!==source.disabled)control.button.disabled=source.disabled;if(control.button.getAttribute('aria-label')!==name)control.button.setAttribute('aria-label',name);control.button.classList.toggle('is-empty',!source.value);}
  function syncAll(){queued=false;controls.forEach(function(control,source){if(!source.isConnected){controls.delete(source);return}sync(source)});}
  function scheduleSync(){if(!queued){queued=true;requestAnimationFrame(syncAll)}}
- function close(){if(!active)return false;var source=active.source;active=null;overlay.classList.remove('visible');controls.forEach(function(control){control.button.setAttribute('aria-expanded','false')});var focus=restoreFocus;restoreFocus=null;if(focus&&focus.isConnected&&!focus.disabled&&focus.getClientRects().length)focus.focus();sync(source);return true;}
+ function close(){if(!active)return false;var source=active.source;if(active.cleanups)active.cleanups.forEach(function(cleanup){cleanup()});active=null;overlay.classList.remove('visible');controls.forEach(function(control){control.button.setAttribute('aria-expanded','false')});var focus=restoreFocus;restoreFocus=null;if(focus&&focus.isConnected&&!focus.disabled&&focus.getClientRects().length)focus.focus();sync(source);return true;}
  window.KetimeAndroidControls={close:close};
  function commit(value){if(!active)return;var source=active.source;if(source.disabled){close();return}source.value=value;close();source.dispatchEvent(new Event('input',{bubbles:true}));source.dispatchEvent(new Event('change',{bubbles:true}));syncAll();}
  function button(text,className,onClick){var node=document.createElement('button');node.type='button';node.className=className;node.textContent=text;node.addEventListener('click',onClick);return node;}
@@ -190,9 +190,23 @@
  function timePicker(){
   content.className='android-picker-content';var parts=active.source.value.split(':'),now=new Date();active.hour=parts[0]!==''?Number(parts[0]):now.getHours();active.minute=parts.length===2?Number(parts[1]):now.getMinutes();
   var preview=document.createElement('div');preview.className='android-time-preview';preview.setAttribute('aria-live','polite');content.appendChild(preview);var columns=document.createElement('div');columns.className='android-time-columns';content.appendChild(columns);
-  function update(){preview.textContent=pad(active.hour)+':'+pad(active.minute);columns.querySelectorAll('[data-time-unit]').forEach(function(item){item.setAttribute('aria-pressed',String(Number(item.dataset.timeValue)===active[item.dataset.timeUnit]))});}
-  ['hour','minute'].forEach(function(unit){var column=document.createElement('section'),heading=document.createElement('h3'),list=document.createElement('div');column.className='android-time-column';heading.textContent=unit==='hour'?'小时':'分钟';list.className='android-time-list';list.setAttribute('aria-label',heading.textContent);for(var i=0;i<(unit==='hour'?24:60);i++){(function(value){var item=button(pad(value),'android-time-option',function(){active[unit]=value;update()});item.dataset.timeUnit=unit;item.dataset.timeValue=String(value);item.setAttribute('aria-label',pad(value)+(unit==='hour'?'时':'分'));list.appendChild(item)})(i);}column.append(heading,list);columns.appendChild(column)});
-  update();footer(function(){commit(pad(active.hour)+':'+pad(active.minute))});requestAnimationFrame(function(){columns.querySelectorAll('[aria-pressed="true"]').forEach(function(item){item.parentElement.scrollTop=Math.max(0,item.offsetTop-item.parentElement.clientHeight/2+item.offsetHeight/2)});var item=columns.querySelector('[data-time-unit="hour"][aria-pressed="true"]');if(item)item.focus({preventScroll:true})});
+  var session=active;session.cleanups=[];session.wheels=[];
+  function update(){if(active===session)preview.textContent=pad(session.hour)+':'+pad(session.minute)}
+  ['hour','minute'].forEach(function(unit){
+   var count=unit==='hour'?24:60,rowHeight=44,column=document.createElement('section'),heading=document.createElement('h3'),list=document.createElement('div'),items=[],timer=null,frame=null,ready=false;
+   column.className='android-time-column';heading.textContent=unit==='hour'?'小时':'分钟';list.className='android-time-list';list.dataset.timeWheel=unit;list.setAttribute('aria-label',heading.textContent+'，上下滑动循环选择');
+   function index(){return Math.max(0,Math.min(items.length-1,Math.round(list.scrollTop/rowHeight)))}
+   function select(i){session[unit]=i%count;list.dataset.selectedIndex=String(i);items.forEach(function(item,n){var chosen=n===i;item.setAttribute('aria-pressed',String(chosen));item.tabIndex=chosen?0:-1});update()}
+   function snap(){if(!ready||active!==session)return;clearTimeout(timer);timer=null;var i=index();select(i);if(i<count||i>=count*4)i=2*count+i%count;list.scrollTop=i*rowHeight;select(i)}
+   function step(delta,edge){if(active!==session)return;var i=index(),value=edge==null?(i%count+delta+count)%count:edge;list.scrollTop=(2*count+value)*rowHeight;select(2*count+value);items[2*count+value].focus({preventScroll:true})}
+   for(var i=0;i<count*5;i++){(function(i){var value=i%count,item=button(pad(value),'android-time-option',function(){list.scrollTop=i*rowHeight;select(i);snap()});item.dataset.timeUnit=unit;item.dataset.timeValue=String(value);item.setAttribute('aria-label',pad(value)+(unit==='hour'?'时':'分'));item.tabIndex=-1;items.push(item);list.appendChild(item)})(i)}
+   list.addEventListener('scroll',function(){if(!ready||active!==session)return;if(frame===null)frame=requestAnimationFrame(function(){frame=null;if(active===session)select(index())});clearTimeout(timer);timer=setTimeout(snap,120)},{passive:true});
+   list.addEventListener('scrollend',snap);list.addEventListener('keydown',function(event){if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;event.preventDefault();event.stopPropagation();step(event.key==='ArrowDown'?1:-1,event.key==='Home'?0:event.key==='End'?count-1:null)});
+   column.append(heading,list);columns.appendChild(column);session.wheels.push({snap:snap});
+   session.cleanups.push(function(){clearTimeout(timer);if(frame!==null)cancelAnimationFrame(frame)});
+   requestAnimationFrame(function(){if(active!==session)return;ready=true;list.scrollTop=(2*count+session[unit])*rowHeight;select(2*count+session[unit]);if(unit==='hour')items[2*count+session[unit]].focus({preventScroll:true})});
+  });
+  update();footer(function(){session.wheels.forEach(function(wheel){wheel.snap()});commit(pad(session.hour)+':'+pad(session.minute))});
  }
  function allowedDate(value){return (!active.source.min||value>=active.source.min)&&(!active.source.max||value<=active.source.max)}
  function datePicker(){

@@ -19,3 +19,16 @@ android/**/build/
 android/local.properties
 android/*.jks
 android/*.keystore
+harmony/.hvigor/
+harmony/oh_modules/
+harmony/**/build/
+harmony/**/oh_modules/
+harmony/local.properties
+harmony/dist/
+harmony/entry/src/main/ets/runtime/Service.js
+harmony/entry/src/main/resources/rawfile/web/
+harmony/**/*.p12
+harmony/**/*.p7b
+harmony/**/*.cer
+harmony/**/*.csr
+harmony/**/*.key
