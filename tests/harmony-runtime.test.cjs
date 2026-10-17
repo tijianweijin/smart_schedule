@@ -211,6 +211,41 @@ test("ChatGPT catalog honors visibility, API capability, modality and effort met
   );
   assert.deepEqual(lib.catalog("chatgpt", data), expected);
 });
+test("ChatGPT warm catalog respects manual refresh, expiry, credentials and current effort", async () => {
+  let fail = false;
+  const h = host(() => ({
+    status: fail ? 503 : 200,
+    body: JSON.stringify({ models: [{ slug: "gpt-6.1-sol", visibility: "list", supported_reasoning_levels: ["low", "high"] }] }),
+  }));
+  const runtime = new lib.Runtime(h);
+  const saved = { hostId: "urn:uuid:fixture", active: "fixture-client", profiles: [{
+    client_id: "fixture-client", access_token: "fake-fixture-access-token",
+    expiresAt: Date.now() / 1000 + 3600,
+    inferenceConfig: { model: "gpt-6.1-sol", reasoningEffort: "low" },
+  }] };
+  h.vault.set("chatgpt", JSON.stringify(saved));
+  assert.equal((await runtime.models("chatgpt", undefined, false)).catalogCacheHit, false);
+  assert.equal((await runtime.models("chatgpt", undefined, false)).catalogCacheHit, true);
+  assert.equal(h.requests.length, 1);
+  saved.profiles[0].inferenceConfig.reasoningEffort = "high";
+  h.vault.set("chatgpt", JSON.stringify(saved));
+  assert.equal((await runtime.models("chatgpt", undefined, false)).reasoningEffort, "high");
+  assert.equal(h.requests.length, 1);
+  await runtime.models("chatgpt");
+  assert.equal(h.requests.length, 2);
+  runtime.modelCache.get("chatgpt").created -= 300001;
+  assert.equal((await runtime.models("chatgpt", undefined, false)).catalogCacheHit, false);
+  assert.equal(h.requests.length, 3);
+  saved.profiles[0].access_token = "different-fake-fixture-token";
+  h.vault.set("chatgpt", JSON.stringify(saved));
+  assert.equal((await runtime.models("chatgpt", undefined, false)).catalogCacheHit, false);
+  assert.equal(h.requests.length, 4);
+  assert(!JSON.stringify([...runtime.modelCache.values()]).includes("different-fake-fixture-token"));
+  fail = true;
+  await assert.rejects(() => runtime.models("chatgpt"));
+  assert.equal(runtime.modelCache.has("chatgpt"), false);
+});
+
 test("BUPT course expansion, IDs, locations and week-zero match Android", async () => {
   for (const week of [0, 5]) {
     const current = {

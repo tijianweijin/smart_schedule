@@ -1,4 +1,4 @@
-param([ValidateSet('debug','release')][string]$Mode='debug', [switch]$Sign)
+param([ValidateSet('debug','release')][string]$Mode='debug', [switch]$Sign, [switch]$FreshBuild)
 $ErrorActionPreference='Stop'
 $repoPath=Split-Path -Parent $PSScriptRoot
 $toolPath=Join-Path $repoPath '.local\harmony-tools'
@@ -29,9 +29,11 @@ if(!(Test-Path -LiteralPath (Join-Path $studioPath 'sdk\default\sdk-pkg.json')))
   if($LASTEXITCODE -gt 7){throw '官方 SDK 私有构建副本未准备成功。'}
 }
 $pythonPath=if($env:KETIME_BUILD_PYTHON){$env:KETIME_BUILD_PYTHON}else{'C:\anaconda3\python.exe'}
-& $pythonPath (Join-Path $repoPath 'tools\prepare-harmony.py')
-if($LASTEXITCODE -ne 0){throw '鸿蒙资源生成失败。'}
-$appPath=Join-Path $buildRoot 'app'
+if(!$FreshBuild){
+  & $pythonPath (Join-Path $repoPath 'tools\prepare-harmony.py')
+  if($LASTEXITCODE -ne 0){throw '鸿蒙资源生成失败。'}
+}
+$appPath=Join-Path $buildRoot $(if($FreshBuild){'app-'+[Guid]::NewGuid().ToString('N')}else{'app'})
 New-Item -ItemType Directory -Path $appPath -Force | Out-Null
 # Copy explicit source directories only: never the repository, .local, APKs,
 # backup data, credential vaults, prior HAPs or signing files.
@@ -40,6 +42,10 @@ foreach($name in @('build-profile.json5','oh-package.json5','hvigorfile.ts')){Co
 $entryPath=Join-Path $appPath 'entry'
 New-Item -ItemType Directory -Path $entryPath -Force | Out-Null
 foreach($name in @('src','build-profile.json5','oh-package.json5','hvigorfile.ts','obfuscation-rules.txt')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot ('entry\'+$name)) -Destination $entryPath -Recurse -Force}
+if($FreshBuild){
+  & $pythonPath (Join-Path $repoPath 'tools\prepare-harmony.py') --output-root $appPath
+  if($LASTEXITCODE -ne 0){throw '鸿蒙独立资源生成失败。'}
+}
 $env:DEVECO_CLI_STUDIO_PATH=$studioPath
 Push-Location $appPath
 try{

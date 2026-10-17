@@ -1,5 +1,6 @@
 """Generate only Harmony package assets from shared Android/mobile sources, no user data."""
 from pathlib import Path
+import argparse
 import hashlib
 import importlib.util
 import json
@@ -12,6 +13,17 @@ RAW = HARMONY / 'entry/src/main/resources/rawfile/web'
 NATIVE = HARMONY / 'entry/src/main/ets/runtime'
 
 def main():
+    global HARMONY, RAW, NATIVE
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--output-root',type=Path)
+    args=parser.parse_args()
+    if args.output_root:
+        target=args.output_root.resolve()
+        if not re.fullmatch(r'C:\\Windows\\Temp\\KetimeHarmony-[a-f0-9]{32}\\app-[a-f0-9]{32}',str(target),re.I):
+            parser.error('Only a dedicated private Harmony build output is supported.')
+        HARMONY=target
+        RAW=target/'entry/src/main/resources/rawfile/web'
+        NATIVE=target/'entry/src/main/ets/runtime'
     RAW.mkdir(parents=True, exist_ok=True)
     NATIVE.mkdir(parents=True, exist_ok=True)
     # The Python module only declares extraction rules/validators; importing it

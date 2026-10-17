@@ -516,6 +516,7 @@
       this.port = port;
       this.options = options;
       this.locks = new Set();
+      this.modelCache = new Map();
       this.pending = null;
       this.lastError = "";
       this.lastSchool = new Map();
@@ -753,7 +754,7 @@
       }
       return p.access_token;
     }
-    async models(provider, keyOverride) {
+    async models(provider, keyOverride, force = true) {
       const d =
           provider === "chatgpt"
             ? await this.chatVault()
@@ -768,7 +769,18 @@
           kimi: "https://api.moonshot.cn/v1",
           minimax: "https://api.minimax.cn/v1",
         }[provider],
+        fingerprint = provider === 'chatgpt' ? await this.invoke('digest', { algorithm: 'SHA256', value: key }) : '',
+        cacheKey = provider + ':' + (d.active || '') + ':' + fingerprint,
+        cached = this.modelCache.get(provider),
+        age = cached ? Date.now() - cached.created : Infinity,
+        hit = provider === 'chatgpt' && !force && !keyOverride && cached && cached.key === cacheKey && age >= 0 && age < 300000;
+      let rows;
+      if (hit) rows = JSON.parse(JSON.stringify(cached.rows));
+      else {
+        this.modelCache.delete(provider);
         rows = catalog(provider, await this.json(base + "/models", key));
+        if (provider === 'chatgpt') this.modelCache.set(provider, { key: cacheKey, created: Date.now(), rows: JSON.parse(JSON.stringify(rows)) });
+      }
       const order = {
           chatgpt: ["gpt-6.1-sol", "gpt-6-sol", "gpt-5.6-sol"],
           deepseek: ["deepseek-flash", "deepseek-chat"],
@@ -794,6 +806,7 @@
         reasoningEffort: effort,
         selectionValid: valid,
         selectionWarning: valid ? "" : "已保存模型或强度不可用，请更新并保存。",
+        catalogCacheHit: !!hit,
       };
     }
     async connect(provider, payload) {
@@ -1029,16 +1042,19 @@
       return { saved: true, model, reasoningEffort: effort };
     }
     async infer(provider, payload, assistant) {
+      const started = Date.now();
       let messages, context;
       if (assistant) {
         ({ messages, context } = input(payload));
       } else
         messages = [{ role: "user", content: text(payload.message, 2000) }];
+      const catalogStarted = Date.now(), available = await this.models(provider, undefined, false), diagnostics = { stage: 'complete', elapsedMs: 0, timings: { catalogMs: Math.max(0, Date.now() - catalogStarted) }, catalogCacheHit: available.catalogCacheHit, usage: {} };
       const { model, effort } = selection(
-        await this.models(provider),
+        available,
         assistant ? undefined : payload.model,
         assistant ? undefined : payload.reasoningEffort,
       );
+      const inferenceStarted = Date.now();
       let reply;
       if (provider === "chatgpt") {
         const body = {
@@ -1160,21 +1176,25 @@
           completed: true,
           reply,
         };
-      let parsed;
+      diagnostics.timings.inferenceMs = Math.max(0, Date.now() - inferenceStarted);
+      const validationStarted = Date.now();let parsed;
       try {
         parsed = JSON.parse(reply);
       } catch (_) {
         throw error("助手回复格式无效，未创建日程。", "ASSISTANT_INVALID", 502);
       }
+      const validated = output(parsed, context);diagnostics.timings.validationMs = Math.max(0, Date.now() - validationStarted);diagnostics.elapsedMs = Math.max(0, Date.now() - started);
       return {
-        ...output(parsed, context),
+        ...validated,
         provider,
         model,
         reasoningEffort: effort,
         completed: true,
+        diagnostics,
       };
     }
     async disconnect(provider) {
+      this.modelCache.delete(provider);
       if (provider !== "chatgpt") {
         await this.write(provider, {});
         return this.status(provider);
@@ -1353,6 +1373,7 @@
           else if (action === "disconnect")
             body = await this.disconnect(provider);
           else if (provider === "chatgpt" && action === "select") {
+            this.modelCache.delete('chatgpt');
             const d = await this.chatVault();
             if (!d.profiles.some((p) => p.client_id === payload.account))
               throw error("账户不存在。");
@@ -1366,6 +1387,7 @@
         } else throw error("接口不存在。", "NOT_FOUND", 404);
         return JSON.stringify({ status: 200, body });
       } catch (e) {
+        if (owned && group === 'chatgpt') this.modelCache.delete('chatgpt');
         return JSON.stringify({
           status: e.safe || (e.code && e.status) ? e.status : 502,
           body: {

@@ -1,0 +1,9 @@
+// A fresh output tree when Windows holds old generated build files open.
+gradle.beforeProject { project ->
+    def selected = System.getProperty('ketime.build.root')
+    if (!selected) throw new GradleException('An isolated Ketime output path is required.')
+    def target = new File(selected).canonicalFile.toPath()
+    def allowed = new File(project.rootDir.parentFile, '.local/android-tools/isolated-builds').canonicalFile.toPath()
+    if (!target.startsWith(allowed) || target == allowed) throw new GradleException('Unexpected isolated output path.')
+    project.layout.buildDirectory.set(new File(selected, project == project.rootProject ? 'root' : project.name))
+}

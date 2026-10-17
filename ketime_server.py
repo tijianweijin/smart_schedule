@@ -17,6 +17,7 @@ from local_settings import public_settings, save_settings, stored_credentials
 from chatgpt_client import CLIENT as CHATGPT
 from deepseek_client import CLIENT as DEEPSEEK
 from api_clients import KIMI, MINIMAX
+import assistant_metrics
 
 API_CLIENTS = {'deepseek': DEEPSEEK, 'kimi': KIMI, 'minimax': MINIMAX}
 API_ACTIONS = {'status', 'connect', 'models', 'configure', 'test', 'disconnect', 'assistant'}
@@ -90,7 +91,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         path = unquote(urlsplit(self.path).path)
         if path == "/api/config":
-            self.send(200, {"csrfToken": BOOT_TOKEN, "version": "0.10.0", "provider": "bupt", "chatgpt": True, "deepseek": True, "kimi": True, "minimax": True, "modelSettings": True, "scheduleAssistant": True, "assistantDrafts": True})
+            self.send(200, {"csrfToken": BOOT_TOKEN, "version": "0.11.0", "provider": "bupt", "chatgpt": True, "deepseek": True, "kimi": True, "minimax": True, "modelSettings": True, "scheduleAssistant": True, "assistantDrafts": True, "assistantDiagnostics": True})
             return
         name = MAIN_FILE if path == "/" else path[1:]
         if name not in STATIC_FILES or not (ROOT / name).is_file():
@@ -108,7 +109,7 @@ class Handler(BaseHTTPRequestHandler):
         api_provider = segments[2] if len(segments) == 4 and segments[1] == 'api' else ''
         api_action = segments[3] if len(segments) == 4 else ''
         api_route = api_provider in API_CLIENTS and api_action in API_ACTIONS
-        if not api_route and self.path not in ("/api/bupt/timetable", "/api/ucloud/prepare", "/api/ucloud/homework", "/api/settings/read", "/api/settings/save", "/api/chatgpt/status", "/api/chatgpt/connect", "/api/chatgpt/models", "/api/chatgpt/configure", "/api/chatgpt/test", "/api/chatgpt/assistant", "/api/chatgpt/disconnect", "/api/chatgpt/select"):
+        if not api_route and self.path not in ("/api/assistant/progress", "/api/bupt/timetable", "/api/ucloud/prepare", "/api/ucloud/homework", "/api/settings/read", "/api/settings/save", "/api/chatgpt/status", "/api/chatgpt/connect", "/api/chatgpt/models", "/api/chatgpt/configure", "/api/chatgpt/test", "/api/chatgpt/assistant", "/api/chatgpt/disconnect", "/api/chatgpt/select"):
             self.send(404, {"error": "接口不存在。"})
             return
         if self.headers.get("Content-Type", "").split(";")[0] != "application/json":
@@ -127,6 +128,14 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError
         except (ValueError, UnicodeError):
             self.send(400, {"error": "请求格式不正确。"})
+            return
+        if self.path == '/api/assistant/progress':
+            try:
+                if set(payload) != {'requestId'}:
+                    raise ValueError
+                self.send(200, assistant_metrics.progress(payload['requestId']))
+            except ValueError:
+                self.send(400, {'error': '诊断请求编号无效。'})
             return
         if api_route:
             try:
@@ -155,7 +164,16 @@ class Handler(BaseHTTPRequestHandler):
                     provider = payload.pop('provider', 'gpt')
                     if provider != 'gpt' and provider not in API_CLIENTS:
                         raise SyncError('提供方无效，未调用其他模型。', 'AI_PROVIDER')
-                    result = (CHATGPT if provider == 'gpt' else API_CLIENTS[provider]).assistant(payload)
+                    request_id = payload.pop('requestId', None)
+                    if request_id is not None and not assistant_metrics.identifier(request_id):
+                        raise SyncError('诊断请求编号无效。', 'ASSISTANT_DIAGNOSTICS', 400)
+                    try:
+                        with assistant_metrics.session(request_id) as trace:
+                            trace.phase('models' if provider == 'gpt' else 'requesting')
+                            result = (CHATGPT if provider == 'gpt' else API_CLIENTS[provider]).assistant(payload)
+                            result['diagnostics'] = trace.finish(True)
+                    except ValueError:
+                        raise SyncError('诊断会话未建立，请重新发送。', 'ASSISTANT_DIAGNOSTICS', 400) from None
                 elif action == "disconnect":
                     result = CHATGPT.disconnect()
                 elif action == "select":
